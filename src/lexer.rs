@@ -95,8 +95,19 @@ mod tests {
     use crate::lexer::Lexer;
     use crate::token::Token;
 
+    fn test_next_token(input: &str, expected: &[Token]) {
+        let mut lexer = Lexer::new(input.to_owned());
+
+        for expected_token in expected.iter() {
+            let token = lexer.next_token();
+
+            assert_eq!(&token, expected_token);
+            println!("{:?}", token);
+        }
+    }
+
     #[test]
-    fn next_token() {
+    fn test_core_functionality() {
         let input = r#"let five = 5;
             let ten = 10;
             
@@ -145,13 +156,8 @@ mod tests {
             Token::Semicolon,
         ];
 
-        let mut lexer = Lexer::new(input.to_owned());
-
-        for expected_token in expected.iter() {
-            let token = lexer.next_token();
-
-            assert_eq!(&token, expected_token);
-            println!("{:?}", token);
-        }
+        test_next_token(input, &expected);
     }
+
+
 }
