@@ -167,9 +167,9 @@ mod tests {
     }
 
     #[test]
-    fn test_extended_functionality() {
+    fn test_extended_chars() {
         let input = r#"!-/*5;
-        5 < 10 > 5;"#;
+        5 < 10 > 5;~"#;
 
         let expected = [
             Token::Bang,
@@ -184,10 +184,25 @@ mod tests {
             Token::Gt,
             Token::Int(5),
             Token::Semicolon,
+            Token::Illegal,
             Token::Eof,
         ];
 
         test_next_token(input, &expected);
     }
 
+    #[test]
+    fn test_extended_keywords() {
+        let input = r#"true false if else return"#;
+
+        let expected = [
+            Token::True,
+            Token::False,
+            Token::If,
+            Token::Else,
+            Token::Return,
+        ];
+
+        test_next_token(input, &expected);
+    }
 }

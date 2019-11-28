@@ -20,6 +20,11 @@ pub enum Token {
     Asterisk,
     Lt,
     Gt,
+    If,
+    Else,
+    Return,
+    True,
+    False,
 }
 
 impl Token {
@@ -27,6 +32,11 @@ impl Token {
         match keyword {
             "fn" => Token::Function,
             "let" => Token::Let,
+            "if" => Token::If,
+            "else" => Token::Else,
+            "return" => Token::Return,
+            "true" => Token::True,
+            "false" => Token::False,
             _ => Token::Ident(keyword.to_owned()),
         }
     }
