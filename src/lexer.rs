@@ -23,7 +23,14 @@ impl Lexer {
         self.skip_whitespace();
 
         let tok = match self.ch {
-            '=' => Token::Assign,
+            '=' => {
+                if '=' == self.peek_char() {
+                    self.read_char();
+                    Token::Equal
+                } else {
+                    Token::Assign
+                }
+            }
             ';' => Token::Semicolon,
             '(' => Token::Lparen,
             ')' => Token::Rparen,
@@ -32,7 +39,14 @@ impl Lexer {
             '{' => Token::Lbrace,
             '}' => Token::Rbrace,
             '-' => Token::Minus,
-            '!' => Token::Bang,
+            '!' => {
+                if '=' == self.peek_char() {
+                    self.read_char();
+                    Token::NotEqual
+                } else {
+                    Token::Bang
+                }
+            }
             '*' => Token::Asterisk,
             '/' => Token::Slash,
             '<' => Token::Lt,
@@ -51,12 +65,12 @@ impl Lexer {
         tok
     }
 
+    fn peek_char(&mut self) -> char {
+        self.input.chars().nth(self.read_position).unwrap_or('\0')
+    }
+
     fn read_char(&mut self) {
-        self.ch = self
-            .input
-            .chars()
-            .nth(self.read_position)
-            .unwrap_or('\u{0}');
+        self.ch = self.peek_char();
         self.position = self.read_position;
         self.read_position += 1;
     }
@@ -202,6 +216,15 @@ mod tests {
             Token::Else,
             Token::Return,
         ];
+
+        test_next_token(input, &expected);
+    }
+
+    #[test]
+    fn test_two_char_tokens() {
+        let input = r#"== !="#;
+
+        let expected = [Token::Equal, Token::NotEqual];
 
         test_next_token(input, &expected);
     }
