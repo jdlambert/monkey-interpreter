@@ -14,6 +14,12 @@ pub enum Token {
     Rbrace,
     Function,
     Let,
+    Bang,
+    Minus,
+    Slash,
+    Asterisk,
+    Lt,
+    Gt,
 }
 
 impl Token {

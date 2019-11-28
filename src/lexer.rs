@@ -31,6 +31,12 @@ impl Lexer {
             '+' => Token::Plus,
             '{' => Token::Lbrace,
             '}' => Token::Rbrace,
+            '-' => Token::Minus,
+            '!' => Token::Bang,
+            '*' => Token::Asterisk,
+            '/' => Token::Slash,
+            '<' => Token::Lt,
+            '>' => Token::Gt,
             '\0' => Token::Eof,
             _ => {
                 if is_letter(self.ch) {
@@ -154,10 +160,34 @@ mod tests {
             Token::Ident("ten".to_string()),
             Token::Rparen,
             Token::Semicolon,
+            Token::Eof,
         ];
 
         test_next_token(input, &expected);
     }
 
+    #[test]
+    fn test_extended_functionality() {
+        let input = r#"!-/*5;
+        5 < 10 > 5;"#;
+
+        let expected = [
+            Token::Bang,
+            Token::Minus,
+            Token::Slash,
+            Token::Asterisk,
+            Token::Int(5),
+            Token::Semicolon,
+            Token::Int(5),
+            Token::Lt,
+            Token::Int(10),
+            Token::Gt,
+            Token::Int(5),
+            Token::Semicolon,
+            Token::Eof,
+        ];
+
+        test_next_token(input, &expected);
+    }
 
 }
