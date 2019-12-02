@@ -12,6 +12,7 @@ pub struct Parser {
 
 #[derive(Debug, PartialEq)]
 pub enum ParserError {
+    UnexpectedEOF,
     ExpectedIdentifierToken(Token),
     ExpectedAssign(Token),
     ExpectedExpression(Token),
@@ -28,37 +29,41 @@ impl Parser {
             cur_token: Token::Illegal,
             peek_token: Token::Illegal,
         };
-        parser.next_token();
-        parser.next_token();
+        parser.next_token().unwrap();
+        parser.next_token().unwrap();
         parser
     }
 
-    fn next_token(&mut self) {
+    fn next_token(&mut self) -> Result<()> {
+        if self.cur_token == Token::Eof {
+            return Err(ParserError::UnexpectedEOF);
+        }
         self.cur_token = mem::replace(&mut self.peek_token, self.lexer.next_token());
-        println!("{:?}", self.cur_token);
+        println!("{:?} | {:?}", self.cur_token, self.peek_token);
+        Ok(())
     }
 
     fn expect_token(&mut self, token: Token, expected: fn(Token) -> ParserError) -> Result<()> {
         if self.cur_token != token {
             return Err(expected(self.cur_token.clone()));
         }
-        self.next_token();
+        self.next_token()?;
         Ok(())
     }
 
     fn parse_expression(&mut self) -> Result<Expression> {
         match self.cur_token {
             Token::Int(i) => {
-              self.next_token();
-              Ok(Expression::IntLiteral(i))
-            },
+                self.next_token()?;
+                Ok(Expression::IntLiteral(i))
+            }
             _ => Err(ParserError::ExpectedStatement(self.cur_token.clone())),
         }
     }
 
     fn parse_identifier(&mut self) -> Result<Expression> {
         if let Token::Ident(ident) = self.cur_token.clone() {
-            self.next_token();
+            self.next_token()?;
             Ok(Expression::Identifier(ident))
         } else {
             Err(ParserError::ExpectedIdentifierToken(self.cur_token.clone()))
@@ -66,16 +71,15 @@ impl Parser {
     }
 
     fn parse_let_statement(&mut self) -> Result<Statement> {
-        self.next_token(); // Consume the `let`
+        self.next_token()?; // Consume the `let`
 
         let identifier = self.parse_identifier()?;
         self.expect_token(Token::Assign, ParserError::ExpectedAssign)?;
         let value = self.parse_expression()?;
 
-        while self.cur_token != Token::Semicolon {
-            self.next_token();
+        if self.cur_token == Token::Semicolon {
+            self.next_token()?;
         }
-        self.next_token();
 
         Ok(Statement::Let(identifier, value))
     }
@@ -87,18 +91,29 @@ impl Parser {
         }
     }
 
-    pub fn parse_program(&mut self) -> Result<Program> {
+    pub fn parse_program(&mut self) -> Option<Program> {
         let mut statements = vec![];
 
         while self.cur_token != Token::Eof {
             let statement_result = self.parse_statement();
             match statement_result {
-              Ok(statement) => statements.push(statement),
-              Err(error) => self.errors.push(error),
+                Ok(statement) => statements.push(statement),
+                Err(error) => {
+                    // Consume all tokens until the semicolon so as not to get stuck
+                    while self.cur_token != Token::Semicolon {
+                        self.next_token().unwrap();
+                    }
+                    self.next_token().unwrap();
+                    self.errors.push(error)
+                }
             }
         }
 
-        Ok(Program { statements })
+        if self.errors.len() > 0 {
+            None
+        } else {
+            Some(Program { statements })
+        }
     }
 }
 
@@ -136,5 +151,15 @@ mod tests {
                 ),
             ]
         )
+    }
+
+    #[test]
+    fn test_bad_let_statements() {
+        let input = r#"let x 5; let = 10; let 10100101;"#;
+
+        let lexer = Lexer::new(input.to_owned());
+        let mut parser = Parser::new(lexer);
+        assert_eq!(parser.parse_program(), None);
+        assert_eq!(parser.errors.len(), 3);
     }
 }
