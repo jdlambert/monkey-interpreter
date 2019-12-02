@@ -39,7 +39,6 @@ impl Parser {
             return Err(ParserError::UnexpectedEOF);
         }
         self.cur_token = mem::replace(&mut self.peek_token, self.lexer.next_token());
-        println!("{:?} | {:?}", self.cur_token, self.peek_token);
         Ok(())
     }
 
@@ -84,9 +83,19 @@ impl Parser {
         Ok(Statement::Let(identifier, value))
     }
 
+    fn parse_return_statement(&mut self) -> Result<Statement> {
+        self.next_token()?; // Consume the `return`
+        let expression = self.parse_expression()?;
+        if self.cur_token == Token::Semicolon {
+            self.next_token()?;
+        }
+        Ok(Statement::Return(expression))
+    }
+
     fn parse_statement(&mut self) -> Result<Statement> {
         match self.cur_token {
             Token::Let => Ok(self.parse_let_statement()?),
+            Token::Return => Ok(self.parse_return_statement()?),
             _ => Err(ParserError::ExpectedStatement(self.cur_token.clone())),
         }
     }
@@ -165,6 +174,26 @@ mod tests {
           ParserError::ExpectedAssign(Token::Int(5)),
           ParserError::ExpectedIdentifier(Token::Assign),
           ParserError::ExpectedIdentifier(Token::Int(10100101)),
+        ]);
+    }
+
+    #[test]
+    fn test_return_statements() {
+        let input = r#"return 5; return 10; return 42;"#;
+
+        let lexer = Lexer::new(input.to_owned());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.statements, vec![
+          Statement::Return(
+              Expression::IntLiteral(5)
+          ),
+          Statement::Return(
+              Expression::IntLiteral(10)
+          ),
+          Statement::Return(
+              Expression::IntLiteral(42)
+          ),
         ]);
     }
 }
