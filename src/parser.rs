@@ -13,7 +13,7 @@ pub struct Parser {
 #[derive(Debug, PartialEq)]
 pub enum ParserError {
     UnexpectedEOF,
-    ExpectedIdentifierToken(Token),
+    ExpectedIdentifier(Token),
     ExpectedAssign(Token),
     ExpectedExpression(Token),
     ExpectedStatement(Token),
@@ -66,7 +66,7 @@ impl Parser {
             self.next_token()?;
             Ok(Expression::Identifier(ident))
         } else {
-            Err(ParserError::ExpectedIdentifierToken(self.cur_token.clone()))
+            Err(ParserError::ExpectedIdentifier(self.cur_token.clone()))
         }
     }
 
@@ -120,9 +120,10 @@ impl Parser {
 #[cfg(test)]
 mod tests {
 
-    use super::Parser;
+    use super::{Parser, ParserError};
     use crate::ast::{Expression, Statement};
     use crate::lexer::Lexer;
+    use crate::token::Token;
 
     #[test]
     fn test_let_statements() {
@@ -160,6 +161,10 @@ mod tests {
         let lexer = Lexer::new(input.to_owned());
         let mut parser = Parser::new(lexer);
         assert_eq!(parser.parse_program(), None);
-        assert_eq!(parser.errors.len(), 3);
+        assert_eq!(parser.errors, vec![
+          ParserError::ExpectedAssign(Token::Int(5)),
+          ParserError::ExpectedIdentifier(Token::Assign),
+          ParserError::ExpectedIdentifier(Token::Int(10100101)),
+        ]);
     }
 }
