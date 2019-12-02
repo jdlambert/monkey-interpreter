@@ -30,7 +30,7 @@ pub enum Token {
 }
 
 impl Token {
-    pub fn from_ident(keyword: &str) -> Token {
+    pub fn from_ident(keyword: &str) -> Self {
         match keyword {
             "fn" => Token::Function,
             "let" => Token::Let,
