@@ -72,9 +72,10 @@ impl Parser {
         self.expect_token(Token::Assign, ParserError::ExpectedAssign)?;
         let value = self.parse_expression()?;
 
-        if self.cur_token == Token::Semicolon {
+        while self.cur_token != Token::Semicolon {
             self.next_token();
         }
+        self.next_token();
 
         Ok(Statement::Let(identifier, value))
     }
@@ -110,9 +111,9 @@ mod tests {
 
     #[test]
     fn test_let_statements() {
-        let input = r#"let x = 5
-                   let y = 10
-                   let foobar = 838383"#;
+        let input = r#"let x = 5;
+                   let y = 10;
+                   let foobar = 838383;"#;
 
         let lexer = Lexer::new(input.to_owned());
         let mut parser = Parser::new(lexer);
