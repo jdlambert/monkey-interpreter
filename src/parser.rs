@@ -36,9 +36,9 @@ impl Parser {
         println!("{:?}", self.cur_token);
     }
 
-    fn expect_peek(&mut self, token: Token, expected: fn(Token) -> ParserError) -> Result<()> {
-        if self.peek_token != token {
-            return Err(expected(self.peek_token.clone()));
+    fn expect_token(&mut self, token: Token, expected: fn(Token) -> ParserError) -> Result<()> {
+        if self.cur_token != token {
+            return Err(expected(self.cur_token.clone()));
         }
         self.next_token();
         Ok(())
@@ -46,13 +46,17 @@ impl Parser {
 
     fn parse_expression(&mut self) -> Result<Expression> {
         match self.cur_token {
-            Token::Int(i) => Ok(Expression::IntLiteral(i)),
+            Token::Int(i) => {
+              self.next_token();
+              Ok(Expression::IntLiteral(i))
+            },
             _ => Err(ParserError::ExpectedStatement(self.cur_token.clone())),
         }
     }
 
     fn parse_identifier(&mut self) -> Result<Expression> {
         if let Token::Ident(ident) = self.cur_token.clone() {
+            self.next_token();
             Ok(Expression::Identifier(ident))
         } else {
             Err(ParserError::ExpectedIdentifierToken(self.cur_token.clone()))
@@ -60,15 +64,13 @@ impl Parser {
     }
 
     fn parse_let_statement(&mut self) -> Result<Statement> {
-        self.next_token();
+        self.next_token(); // Consume the `let`
+
         let identifier = self.parse_identifier()?;
-
-        self.expect_peek(Token::Assign, ParserError::ExpectedAssign)?;
-        self.next_token();
-
+        self.expect_token(Token::Assign, ParserError::ExpectedAssign)?;
         let value = self.parse_expression()?;
 
-        if self.peek_token == Token::Semicolon {
+        if self.cur_token == Token::Semicolon {
             self.next_token();
         }
 
@@ -87,7 +89,6 @@ impl Parser {
 
         while self.cur_token != Token::Eof {
             statements.push(self.parse_statement()?);
-            self.next_token();
         }
 
         Ok(Program { statements })
