@@ -7,6 +7,7 @@ pub struct Parser {
     lexer: Lexer,
     cur_token: Token,
     peek_token: Token,
+    errors: Vec<ParserError>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -23,6 +24,7 @@ impl Parser {
     pub fn new(lexer: Lexer) -> Self {
         let mut parser = Parser {
             lexer,
+            errors: vec![],
             cur_token: Token::Illegal,
             peek_token: Token::Illegal,
         };
@@ -88,7 +90,11 @@ impl Parser {
         let mut statements = vec![];
 
         while self.cur_token != Token::Eof {
-            statements.push(self.parse_statement()?);
+            let statement_result = self.parse_statement();
+            match statement_result {
+              Ok(statement) => statements.push(statement),
+              Err(error) => self.errors.push(error),
+            }
         }
 
         Ok(Program { statements })
