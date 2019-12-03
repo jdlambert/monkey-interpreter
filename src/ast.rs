@@ -97,6 +97,7 @@ pub enum Expression {
     Infix(Infix, Box<Expression>, Box<Expression>),
     If(Box<Expression>, BlockStatement, Option<BlockStatement>),
     Function(Vec<String>, BlockStatement),
+    Call(Box<Expression>, Vec<Expression>),
 }
 
 impl fmt::Display for Expression {
@@ -114,10 +115,18 @@ impl fmt::Display for Expression {
                     write!(f, " else {}", block)?;
                 }
                 Ok(())
-            },
+            }
             Expression::Function(parameters, body) => {
                 write!(f, "fn ({}) {}", parameters.join(", "), body)
-            },
+            }
+            Expression::Call(name, parameters) => {
+                let parameters = parameters
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "{}({})", name, parameters)
+            }
         }
     }
 }

@@ -51,6 +51,7 @@ impl From<&Token> for Precedence {
             Token::Minus => Precedence::Sum,
             Token::Slash => Precedence::Product,
             Token::Asterisk => Precedence::Product,
+            Token::Lparen => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }
@@ -97,6 +98,7 @@ fn infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
         Token::NotEqual => Some(Parser::parse_infix_expression),
         Token::Lt => Some(Parser::parse_infix_expression),
         Token::Gt => Some(Parser::parse_infix_expression),
+        Token::Lparen => Some(Parser::parse_call_expression),
         _ => None,
     }
 }
@@ -212,39 +214,64 @@ impl Parser {
     fn parse_function_params(&mut self) -> Result<Vec<String>> {
         let mut parameters = vec![];
         self.expect_token(Token::Lparen, ParserError::ExpectedLparen)?;
-        
-        if self.cur_token == Token::Rparen {
-            // There are no parameters
-            self.next_token()?; // Consume the `)`
-            return Ok(parameters);
-        }
 
-        if let Expression::Identifier(i) = self.parse_identifier()? {
-            parameters.push(i);
-        }
+        if self.cur_token != Token::Rparen {
 
-        while self.cur_token == Token::Comma {
-            self.next_token()?; // Consume the `,`
             if let Expression::Identifier(i) = self.parse_identifier()? {
                 parameters.push(i);
             }
+
+            while self.cur_token == Token::Comma {
+                self.next_token()?; // Consume the `,`
+                if let Expression::Identifier(i) = self.parse_identifier()? {
+                    parameters.push(i);
+                }
+            }
+
         }
 
         self.expect_token(Token::Rparen, ParserError::ExpectedRparen)?;
 
         Ok(parameters)
     }
-    
+
     fn parse_function_literal(&mut self) -> Result<Expression> {
         self.next_token()?; // Consume the `fn`
 
         let parameters = self.parse_function_params()?;
         let body = self.parse_block_statement()?;
 
-        Ok(Expression::Function(
-            parameters,
-            body,
-        ))
+        Ok(Expression::Function(parameters, body))
+    }
+
+    fn parse_expressions(
+        &mut self,
+        end_token: Token,
+        expected: fn(Token) -> ParserError,
+    ) -> Result<Vec<Expression>> {
+        let mut expressions = vec![];
+
+        if self.cur_token != end_token {
+            
+            expressions.push(self.parse_expression(Precedence::Lowest)?);
+
+            while self.cur_token == Token::Comma {
+                self.next_token()?; // Consume the `,`
+                expressions.push(self.parse_expression(Precedence::Lowest)?);
+            }
+
+        }
+        self.expect_token(end_token, expected)?;
+
+        Ok(expressions)
+    }
+
+    fn parse_call_expression(&mut self, left: Expression) -> Result<Expression> {
+        self.next_token()?; // Consume the `(`
+        
+        let parameters = self.parse_expressions(Token::Rparen, ParserError::ExpectedRparen)?;
+
+        Ok(Expression::Call(Box::new(left), parameters))
     }
 
     fn parse_if_expression(&mut self) -> Result<Expression> {
@@ -278,6 +305,7 @@ impl Parser {
             None => return Err(ParserError::ExpectedExpression(self.cur_token.clone())),
         };
 
+        println!("INFIX? {:?}", self.cur_token);
         while self.cur_token != Token::Semicolon && precedence < Precedence::from(&self.cur_token) {
             left = match infix_parse_fn(&self.cur_token) {
                 Some(parse_function) => parse_function(self, left)?,
@@ -461,9 +489,15 @@ mod tests {
     }
 
     #[test]
-    fn test_functions() {
-        test_parsing(vec![
-            ("fn (x, y, z) { return x + 10 * y }", "fn (x, y, z) { return (x + (10 * y)); };")
-        ]);
+    fn test_function_literals() {
+        test_parsing(vec![(
+            "fn (x, y, z) { return x + 10 * y }",
+            "fn (x, y, z) { return (x + (10 * y)); };",
+        )]);
+    }
+
+    #[test]
+    fn test_calls() {
+        test_parsing(vec![("add(x, y, z)", "add(x, y, z);")]);
     }
 }
