@@ -51,41 +51,41 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Result<Expression> {
-        match self.cur_token {
+        match self.cur_token.clone() {
             Token::Int(i) => {
-                self.next_token()?;
                 Ok(Expression::IntLiteral(i))
-            }
-            _ => Err(ParserError::ExpectedStatement(self.cur_token.clone())),
-        }
-    }
-
-    fn parse_identifier(&mut self) -> Result<Expression> {
-        if let Token::Ident(ident) = self.cur_token.clone() {
-            self.next_token()?;
-            Ok(Expression::Identifier(ident))
-        } else {
-            Err(ParserError::ExpectedIdentifier(self.cur_token.clone()))
+            },
+            Token::Ident(i) => {
+                Ok(Expression::Identifier(i))
+            },
+            _ => Err(ParserError::ExpectedExpression(self.cur_token.clone())),
         }
     }
 
     fn parse_let_statement(&mut self) -> Result<Statement> {
         self.next_token()?; // Consume the `let`
 
-        let identifier = self.parse_identifier()?;
+        let expression = self.parse_expression()?;
+        match expression {
+            Expression::Identifier(_) => {},
+            _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
+        }
+        self.next_token()?;
         self.expect_token(Token::Assign, ParserError::ExpectedAssign)?;
         let value = self.parse_expression()?;
+        self.next_token()?;
 
         if self.cur_token == Token::Semicolon {
             self.next_token()?;
         }
 
-        Ok(Statement::Let(identifier, value))
+        Ok(Statement::Let(expression, value))
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement> {
         self.next_token()?; // Consume the `return`
         let expression = self.parse_expression()?;
+        self.next_token()?;
         if self.cur_token == Token::Semicolon {
             self.next_token()?;
         }
@@ -96,7 +96,7 @@ impl Parser {
         match self.cur_token {
             Token::Let => Ok(self.parse_let_statement()?),
             Token::Return => Ok(self.parse_return_statement()?),
-            _ => Err(ParserError::ExpectedStatement(self.cur_token.clone())),
+            _ => Ok(Statement::Expression(self.parse_expression()?))
         }
     }
 
@@ -172,7 +172,7 @@ mod tests {
         assert_eq!(parser.parse_program(), None);
         assert_eq!(parser.errors, vec![
           ParserError::ExpectedAssign(Token::Int(5)),
-          ParserError::ExpectedIdentifier(Token::Assign),
+          ParserError::ExpectedExpression(Token::Assign),
           ParserError::ExpectedIdentifier(Token::Int(10100101)),
         ]);
     }
