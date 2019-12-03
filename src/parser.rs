@@ -1,4 +1,4 @@
-use crate::ast::{Expression, Infix, Prefix, Program, Statement};
+use crate::ast::{BlockStatement, Expression, Infix, Prefix, Program, Statement};
 use crate::lexer::Lexer;
 use crate::token::Token;
 use std::convert::TryFrom;
@@ -22,7 +22,10 @@ pub enum ParserError {
     ExpectedExpression(Token),
     ExpectedStatement(Token),
     ExpectedInfix(Token),
+    ExpectedLparen(Token),
     ExpectedRparen(Token),
+    ExpectedLbrace(Token),
+    ExpectedRbrace(Token),
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -77,6 +80,7 @@ fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
         Token::Bang => Some(Parser::parse_prefix_bang),
         Token::Minus => Some(Parser::parse_prefix_minus),
         Token::Lparen => Some(Parser::parse_paren_expression),
+        Token::If => Some(Parser::parse_if_expression),
         _ => None,
     }
 }
@@ -188,6 +192,41 @@ impl Parser {
         self.expect_token(Token::Rparen, ParserError::ExpectedRparen)?;
 
         Ok(expression)
+    }
+
+    fn parse_block_statement(&mut self) -> Result<BlockStatement> {
+        let mut statements = vec![];
+
+        self.expect_token(Token::Lbrace, ParserError::ExpectedLbrace)?;
+        while self.cur_token != Token::Rbrace {
+            statements.push(self.parse_statement()?);
+        }
+        self.expect_token(Token::Rbrace, ParserError::ExpectedRbrace)?;
+
+        Ok(BlockStatement { statements })
+    }
+
+    fn parse_if_expression(&mut self) -> Result<Expression> {
+        self.next_token()?; // Consume the `if`
+
+        self.expect_token(Token::Lparen, ParserError::ExpectedLparen)?;
+        let condition = self.parse_expression(Precedence::Lowest)?;
+        self.expect_token(Token::Rparen, ParserError::ExpectedRparen)?;
+
+        let consequence = self.parse_block_statement()?;
+
+        let alternative = if self.cur_token == Token::Else {
+            self.next_token()?; // Consume the `else`
+            Some(self.parse_block_statement()?)
+        } else {
+            None
+        };
+
+        Ok(Expression::If(
+            Box::new(condition),
+            consequence,
+            alternative,
+        ))
     }
 
     // Expression, Statement, and Program Parsing
@@ -362,6 +401,21 @@ mod tests {
             ("(5 + 5) * 2", "((5 + 5) * 2);"),
             ("2 / (5 + 5)", "(2 / (5 + 5));"),
             ("-(5 + 5)", "(-(5 + 5));"),
+        ]);
+    }
+
+    #[test]
+    fn test_conditional_expressions() {
+        test_parsing(vec![
+            ("if (x < y) { x }", "if (x < y) { x; };"),
+            (
+                "if (x < y) { x } else { z }",
+                "if (x < y) { x; } else { z; };",
+            ),
+            (
+                "if (x < y) { return x; } else { return z; }",
+                "if (x < y) { return x; } else { return z; };",
+            ),
         ]);
     }
 }

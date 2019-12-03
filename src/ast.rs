@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }
@@ -14,7 +14,7 @@ impl fmt::Display for Program {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Let(Expression, Expression),
     Return(Expression),
@@ -31,7 +31,23 @@ impl fmt::Display for Statement {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
+pub struct BlockStatement {
+    pub statements: Vec<Statement>,
+}
+
+impl fmt::Display for BlockStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{ ")?;
+        for stmt in &self.statements {
+            write!(f, "{}", stmt)?;
+        }
+        write!(f, " }}")?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Prefix {
     Bang,
     Minus,
@@ -46,7 +62,7 @@ impl fmt::Display for Prefix {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Infix {
     Plus,
     Minus,
@@ -73,12 +89,13 @@ impl fmt::Display for Infix {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Identifier(String),
     IntLiteral(u32),
     Prefix(Prefix, Box<Expression>),
     Infix(Infix, Box<Expression>, Box<Expression>),
+    If(Box<Expression>, BlockStatement, Option<BlockStatement>),
 }
 
 impl fmt::Display for Expression {
@@ -89,6 +106,13 @@ impl fmt::Display for Expression {
             Expression::Prefix(operator, exp) => write!(f, "({}{})", operator, exp),
             Expression::Infix(operator, left, right) => {
                 write!(f, "({} {} {})", left, operator, right)
+            }
+            Expression::If(cond, then, alt) => {
+                write!(f, "if {} {}", cond, then)?;
+                if let Some(block) = alt {
+                    write!(f, " else {}", block)?;
+                }
+                Ok(())
             }
         }
     }
