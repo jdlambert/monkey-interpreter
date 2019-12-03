@@ -1,5 +1,3 @@
-use std::fmt;
-
 #[derive(Debug, PartialEq)]
 pub struct Program {
     pub statements: Vec<Statement>,
@@ -18,13 +16,16 @@ pub enum Prefix {
     Minus,
 }
 
-impl fmt::Display for Prefix {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Prefix::Bang => write!(f, "!"),
-            Prefix::Minus => write!(f, "-"),
-        }
-    }
+#[derive(Debug, PartialEq)]
+pub enum Infix {
+    Plus,
+    Minus,
+    Slash,
+    Asterisk,
+    Lt,
+    Gt,
+    Equal,
+    NotEqual,
 }
 
 #[derive(Debug, PartialEq)]
@@ -32,4 +33,5 @@ pub enum Expression {
     Identifier(String),
     IntLiteral(u32),
     Prefix(Prefix, Box<Expression>),
+    Infix(Infix, Box<Expression>, Box<Expression>),
 }
