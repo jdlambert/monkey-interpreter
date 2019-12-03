@@ -1,6 +1,17 @@
+use std::fmt;
+
 #[derive(Debug, PartialEq)]
 pub struct Program {
     pub statements: Vec<Statement>,
+}
+
+impl fmt::Display for Program {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for stmt in &self.statements {
+            write!(f, "{} ", stmt)?;
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -10,10 +21,29 @@ pub enum Statement {
     Expression(Expression),
 }
 
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Statement::Let(left, right) => write!(f, "let {} = {};", left, right),
+            Statement::Return(expr) => write!(f, "return {};", expr),
+            Statement::Expression(expr) => write!(f, "{};", expr),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Prefix {
     Bang,
     Minus,
+}
+
+impl fmt::Display for Prefix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Prefix::Bang => write!(f, "!"),
+            Prefix::Minus => write!(f, "-"),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -28,10 +58,38 @@ pub enum Infix {
     NotEqual,
 }
 
+impl fmt::Display for Infix {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Infix::Equal => write!(f, "=="),
+            Infix::NotEqual => write!(f, "!="),
+            Infix::Lt => write!(f, "<"),
+            Infix::Gt => write!(f, ">"),
+            Infix::Plus => write!(f, "+"),
+            Infix::Minus => write!(f, "-"),
+            Infix::Asterisk => write!(f, "*"),
+            Infix::Slash => write!(f, "/"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     Identifier(String),
     IntLiteral(u32),
     Prefix(Prefix, Box<Expression>),
     Infix(Infix, Box<Expression>, Box<Expression>),
+}
+
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Expression::Identifier(ident) => write!(f, "{}", ident),
+            Expression::IntLiteral(value) => write!(f, "{}", value),
+            Expression::Prefix(operator, exp) => write!(f, "({}{})", operator, exp),
+            Expression::Infix(operator, left, right) => {
+                write!(f, "({} {} {})", left, operator, right)
+            }
+        }
+    }
 }

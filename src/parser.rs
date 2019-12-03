@@ -24,6 +24,7 @@ pub enum ParserError {
     ExpectedExpression(Token),
     ExpectedStatement(Token),
     ExpectedInfix(Token),
+    ExpectedRparen(Token),
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -77,6 +78,7 @@ fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
         Token::Int(_) => Some(Parser::parse_integer_literal),
         Token::Bang => Some(Parser::parse_prefix_bang),
         Token::Minus => Some(Parser::parse_prefix_minus),
+        Token::Lparen => Some(Parser::parse_paren_expression),
         _ => None,
     }
 }
@@ -182,6 +184,15 @@ impl Parser {
             }
             _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
         }
+    }
+
+    fn parse_paren_expression(&mut self) -> Result<Expression> {
+        
+        self.next_token()?; // Consume the left parenthesis
+        let expression = self.parse_expression(Precedence::Lowest)?;
+        self.expect_token(Token::Rparen, ParserError::ExpectedRparen)?;
+
+        Ok(expression)
     }
 
     // Expression, Statement, and Program Parsing
