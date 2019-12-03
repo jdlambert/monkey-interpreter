@@ -31,5 +31,5 @@ impl fmt::Display for Prefix {
 pub enum Expression {
     Identifier(String),
     IntLiteral(u32),
-    PrefixExpression(Prefix, Box<Expression>),
+    Prefix(Prefix, Box<Expression>),
 }

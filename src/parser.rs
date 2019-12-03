@@ -1,4 +1,4 @@
-use crate::ast::{Expression, Program, Statement};
+use crate::ast::{Expression, Prefix, Program, Statement};
 use crate::lexer::Lexer;
 use crate::token::Token;
 use std::mem;
@@ -65,6 +65,32 @@ impl Parser {
 
     // Prefix parse functions
 
+    fn parse_prefix_minus(&mut self) -> Result<Expression> {
+        match self.cur_token.clone() {
+            Token::Minus => {
+                self.next_token()?;
+                Ok(Expression::Prefix(
+                    Prefix::Minus,
+                    Box::new(self.parse_expression(Precedence::Prefix)?),
+                ))
+            }
+            _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
+        }
+    }
+
+    fn parse_prefix_bang(&mut self) -> Result<Expression> {
+        match self.cur_token.clone() {
+            Token::Bang => {
+                self.next_token()?;
+                Ok(Expression::Prefix(
+                    Prefix::Bang,
+                    Box::new(self.parse_expression(Precedence::Prefix)?),
+                ))
+            }
+            _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
+        }
+    }
+
     fn parse_integer_literal(&mut self) -> Result<Expression> {
         match self.cur_token.clone() {
             Token::Int(i) => {
@@ -89,6 +115,8 @@ impl Parser {
         match &self.cur_token {
             Token::Ident(_) => Some(Parser::parse_identifier),
             Token::Int(_) => Some(Parser::parse_integer_literal),
+            Token::Bang => Some(Parser::parse_prefix_bang),
+            Token::Minus => Some(Parser::parse_prefix_minus),
             _ => None,
         }
     }
@@ -159,7 +187,7 @@ impl Parser {
 mod tests {
 
     use super::{Parser, ParserError};
-    use crate::ast::{Expression, Statement};
+    use crate::ast::{Expression, Prefix, Statement};
     use crate::lexer::Lexer;
     use crate::token::Token;
 
@@ -241,5 +269,27 @@ mod tests {
                 Statement::Expression(Expression::Identifier("b".to_string())),
             ]
         );
+    }
+
+    #[test]
+    fn test_prefix_operators() {
+        let tests = vec![
+            ("!5;", Prefix::Bang, Expression::IntLiteral(5)),
+            ("-15;", Prefix::Minus, Expression::IntLiteral(15)),
+        ];
+        for (input, operator, value) in tests {
+            let lexer = Lexer::new(input.to_owned());
+            let mut parser = Parser::new(lexer);
+
+            let program = parser.parse_program().unwrap();
+
+            assert_eq!(
+                program.statements,
+                vec![Statement::Expression(Expression::Prefix(
+                    operator,
+                    Box::new(value),
+                ))]
+            );
+        }
     }
 }
