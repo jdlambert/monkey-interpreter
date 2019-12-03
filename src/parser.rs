@@ -271,37 +271,27 @@ impl Parser {
 mod tests {
 
     use super::{Parser, ParserError};
-    use crate::ast::{Expression, Infix, Prefix, Statement};
     use crate::lexer::Lexer;
     use crate::token::Token;
 
+    fn test_parsing(tests: Vec<(&str, &str)>) {
+        for (input, expected) in tests {
+            let lexer = Lexer::new(input.to_owned());
+            let mut parser = Parser::new(lexer);
+
+            let program = parser.parse_program().unwrap();
+
+            assert_eq!(program.to_string(), expected);
+        }
+    }
+
     #[test]
     fn test_let_statements() {
-        let input = r#"let x = 5;
-                   let y = 10;
-                   let foobar = 838383;"#;
-
-        let lexer = Lexer::new(input.to_owned());
-        let mut parser = Parser::new(lexer);
-        let program = parser.parse_program().unwrap();
-
-        assert_eq!(
-            program.statements,
-            vec![
-                Statement::Let(
-                    Expression::Identifier("x".to_string()),
-                    Expression::IntLiteral(5)
-                ),
-                Statement::Let(
-                    Expression::Identifier("y".to_string()),
-                    Expression::IntLiteral(10)
-                ),
-                Statement::Let(
-                    Expression::Identifier("foobar".to_string()),
-                    Expression::IntLiteral(838383)
-                ),
-            ]
-        )
+        test_parsing(vec![
+            ("let x = 5;", "let x = 5;"),
+            ("let y = 10;", "let y = 10;"),
+            ("let foobar = 83838383;", "let foobar = 83838383;"),
+        ]);
     }
 
     #[test]
@@ -323,86 +313,70 @@ mod tests {
 
     #[test]
     fn test_return_statements() {
-        let input = r#"return 5; return 10; return 42;"#;
-
-        let lexer = Lexer::new(input.to_owned());
-        let mut parser = Parser::new(lexer);
-        let program = parser.parse_program().unwrap();
-        assert_eq!(
-            program.statements,
-            vec![
-                Statement::Return(Expression::IntLiteral(5)),
-                Statement::Return(Expression::IntLiteral(10)),
-                Statement::Return(Expression::IntLiteral(42)),
-            ]
-        );
+        test_parsing(vec![
+            ("return 5;", "return 5;"),
+            ("return 10;", "return 10;"),
+            ("return 42;", "return 42;"),
+        ]);
     }
 
     #[test]
     fn test_lone_identifiers() {
-        let input = r#"foobar; a; b;"#;
-
-        let lexer = Lexer::new(input.to_owned());
-        let mut parser = Parser::new(lexer);
-        let program = parser.parse_program().unwrap();
-        assert_eq!(
-            program.statements,
-            vec![
-                Statement::Expression(Expression::Identifier("foobar".to_string())),
-                Statement::Expression(Expression::Identifier("a".to_string())),
-                Statement::Expression(Expression::Identifier("b".to_string())),
-            ]
-        );
+        test_parsing(vec![
+            ("foobar;", "foobar;"),
+            ("a;", "a;"),
+            ("b;", "b;"),
+        ]);
     }
 
     #[test]
     fn test_prefix_expressions() {
-        let tests = vec![
-            ("!5;", Prefix::Bang, Expression::IntLiteral(5)),
-            ("-15;", Prefix::Minus, Expression::IntLiteral(15)),
-        ];
-        for (input, operator, value) in tests {
-            let lexer = Lexer::new(input.to_owned());
-            let mut parser = Parser::new(lexer);
-
-            let program = parser.parse_program().unwrap();
-
-            assert_eq!(
-                program.statements,
-                vec![Statement::Expression(Expression::Prefix(
-                    operator,
-                    Box::new(value),
-                ))]
-            );
-        }
+        test_parsing(vec![
+            ("!5;", "(!5);"),
+            ("-15;", "(-15);"),
+        ]);
     }
 
     #[test]
     fn test_infix_expressions() {
-        let tests = vec![
-            ("5 + 5;", 5, Infix::Plus, 5),
-            ("5 - 5;", 5, Infix::Minus, 5),
-            ("5 * 5;", 5, Infix::Asterisk, 5),
-            ("5 / 5;", 5, Infix::Slash, 5),
-            ("5 > 5;", 5, Infix::Gt, 5),
-            ("5 < 5;", 5, Infix::Lt, 5),
-            ("5 == 5;", 5, Infix::Equal, 5),
-            ("5 != 5;", 5, Infix::NotEqual, 5),
-        ];
-        for (input, left, operator, right) in tests {
-            let lexer = Lexer::new(input.to_owned());
-            let mut parser = Parser::new(lexer);
-
-            let program = parser.parse_program().unwrap();
-
-            assert_eq!(
-                program.statements,
-                vec![Statement::Expression(Expression::Infix(
-                    operator,
-                    Box::new(Expression::IntLiteral(left)),
-                    Box::new(Expression::IntLiteral(right))
-                ))]
-            );
-        }
+        test_parsing(vec![
+            ("5 + 5;", "(5 + 5);"),
+            ("5 - 5;", "(5 - 5);"),
+            ("5 * 5;", "(5 * 5);"),
+            ("5 / 5;", "(5 / 5);"),
+            ("5 > 5;", "(5 > 5);"),
+            ("5 < 5;", "(5 < 5);"),
+            ("5 == 5;", "(5 == 5);"),
+            ("5 != 5;", "(5 != 5);"),
+        ]);
     }
+
+    #[test]
+    fn test_operator_precedence() {
+        test_parsing(vec![
+            ("-a * b", "((-a) * b);"),
+            ("!-a", "(!(-a));"),
+            ("a + b + c", "((a + b) + c);"),
+            ("a + b - c", "((a + b) - c);"),
+            ("a * b * c", "((a * b) * c);"),
+            ("a * b / c", "((a * b) / c);"),
+            ("a + b / c", "(a + (b / c));"),
+            ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f);"),
+            ("3 + 4; -5 * 5", "(3 + 4);((-5) * 5);"),
+            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4));"),
+            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4));"),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)));",
+            ),
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4);"),
+            ("(5 + 5) * 2", "((5 + 5) * 2);"),
+            ("2 / (5 + 5)", "(2 / (5 + 5));"),
+            ("-(5 + 5)", "(-(5 + 5));"),
+            ("return x", "return x;"),
+            ("return x return 2 * 3", "return x;return (2 * 3);"),
+            ("return 2 * 4 + 5;", "return ((2 * 4) + 5);"),
+        ]);
+    }
+
 }
