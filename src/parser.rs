@@ -2,7 +2,6 @@ use crate::ast::{Expression, Infix, Prefix, Program, Statement};
 use crate::lexer::Lexer;
 use crate::token::Token;
 use std::convert::TryFrom;
-use std::mem;
 
 type Result<T> = std::result::Result<T, ParserError>;
 type PrefixParseFn = fn(&mut Parser) -> Result<Expression>;
@@ -11,7 +10,6 @@ type InfixParseFn = fn(&mut Parser, Expression) -> Result<Expression>;
 pub struct Parser {
     lexer: Lexer,
     cur_token: Token,
-    peek_token: Token,
     errors: Vec<ParserError>,
 }
 
@@ -103,9 +101,7 @@ impl Parser {
             lexer,
             errors: vec![],
             cur_token: Token::Illegal,
-            peek_token: Token::Illegal,
         };
-        parser.next_token().unwrap();
         parser.next_token().unwrap();
         parser
     }
@@ -114,7 +110,7 @@ impl Parser {
         if self.cur_token == Token::Eof {
             return Err(ParserError::UnexpectedEOF);
         }
-        self.cur_token = mem::replace(&mut self.peek_token, self.lexer.next_token());
+        self.cur_token = self.lexer.next_token();
         Ok(())
     }
 
