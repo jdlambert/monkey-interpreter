@@ -26,6 +26,7 @@ pub enum ParserError {
     ExpectedRparen(Token),
     ExpectedLbrace(Token),
     ExpectedRbrace(Token),
+    ExpectedComma(Token),
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -81,6 +82,7 @@ fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
         Token::Minus => Some(Parser::parse_prefix_minus),
         Token::Lparen => Some(Parser::parse_paren_expression),
         Token::If => Some(Parser::parse_if_expression),
+        Token::Function => Some(Parser::parse_function_literal),
         _ => None,
     }
 }
@@ -200,10 +202,49 @@ impl Parser {
         self.expect_token(Token::Lbrace, ParserError::ExpectedLbrace)?;
         while self.cur_token != Token::Rbrace {
             statements.push(self.parse_statement()?);
+            println!("{:?}", statements);
         }
-        self.expect_token(Token::Rbrace, ParserError::ExpectedRbrace)?;
+        self.next_token()?; // Consume the `}`
 
         Ok(BlockStatement { statements })
+    }
+
+    fn parse_function_params(&mut self) -> Result<Vec<String>> {
+        let mut parameters = vec![];
+        self.expect_token(Token::Lparen, ParserError::ExpectedLparen)?;
+        
+        if self.cur_token == Token::Rparen {
+            // There are no parameters
+            self.next_token()?; // Consume the `)`
+            return Ok(parameters);
+        }
+
+        if let Expression::Identifier(i) = self.parse_identifier()? {
+            parameters.push(i);
+        }
+
+        while self.cur_token == Token::Comma {
+            self.next_token()?; // Consume the `,`
+            if let Expression::Identifier(i) = self.parse_identifier()? {
+                parameters.push(i);
+            }
+        }
+
+        self.expect_token(Token::Rparen, ParserError::ExpectedRparen)?;
+
+        Ok(parameters)
+    }
+    
+    fn parse_function_literal(&mut self) -> Result<Expression> {
+        self.next_token()?; // Consume the `fn`
+
+        let parameters = self.parse_function_params()?;
+        let body = self.parse_block_statement()?;
+
+        Ok(Expression::Function(
+            parameters,
+            body,
+        ))
     }
 
     fn parse_if_expression(&mut self) -> Result<Expression> {
@@ -416,6 +457,13 @@ mod tests {
                 "if (x < y) { return x; } else { return z; }",
                 "if (x < y) { return x; } else { return z; };",
             ),
+        ]);
+    }
+
+    #[test]
+    fn test_functions() {
+        test_parsing(vec![
+            ("fn (x, y, z) { return x + 10 * y }", "fn (x, y, z) { return (x + (10 * y)); };")
         ]);
     }
 }
