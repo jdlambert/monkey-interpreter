@@ -285,7 +285,7 @@ mod tests {
         test_parsing(vec![
             ("let x = 5;", "let x = 5;"),
             ("let y = 10;", "let y = 10;"),
-            ("let foobar = 83838383;", "let foobar = 83838383;"),
+            ("let foobar = 83838383", "let foobar = 83838383;"),
         ]);
     }
 
@@ -309,15 +309,16 @@ mod tests {
     #[test]
     fn test_return_statements() {
         test_parsing(vec![
-            ("return 5;", "return 5;"),
-            ("return 10;", "return 10;"),
             ("return 42;", "return 42;"),
+            ("return x", "return x;"),
+            ("return x return 2 * 3", "return x;return (2 * 3);"),
+            ("return 2 * 4 + 5;", "return ((2 * 4) + 5);"),
         ]);
     }
 
     #[test]
     fn test_lone_identifiers() {
-        test_parsing(vec![("foobar;", "foobar;"), ("a;", "a;"), ("b;", "b;")]);
+        test_parsing(vec![("foobar;", "foobar;"), ("a", "a;"), ("b;", "b;")]);
     }
 
     #[test]
@@ -361,9 +362,6 @@ mod tests {
             ("(5 + 5) * 2", "((5 + 5) * 2);"),
             ("2 / (5 + 5)", "(2 / (5 + 5));"),
             ("-(5 + 5)", "(-(5 + 5));"),
-            ("return x", "return x;"),
-            ("return x return 2 * 3", "return x;return (2 * 3);"),
-            ("return 2 * 4 + 5;", "return ((2 * 4) + 5);"),
         ]);
     }
 }
