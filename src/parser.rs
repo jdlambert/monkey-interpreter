@@ -192,12 +192,9 @@ impl Parser {
             None => return Err(ParserError::ExpectedExpression(self.cur_token.clone())),
         };
 
-        while self.cur_token != Token::Semicolon && precedence < Precedence::from(&self.cur_token)
-        {
+        while self.cur_token != Token::Semicolon && precedence < Precedence::from(&self.cur_token) {
             left = match infix_parse_fn(&self.cur_token) {
-                Some(parse_function) => {
-                     parse_function(self, left)?
-                }
+                Some(parse_function) => parse_function(self, left)?,
                 None => return Ok(left),
             };
         }
