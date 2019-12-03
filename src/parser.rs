@@ -7,13 +7,14 @@ type Result<T> = std::result::Result<T, ParserError>;
 type PrefixParseFn = fn(&mut Parser) -> Result<Expression>;
 type InfixParseFn = fn(&mut Parser, Expression) -> Result<Expression>;
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct Parser {
     lexer: Lexer,
     cur_token: Token,
-    errors: Vec<ParserError>,
+    pub errors: Vec<ParserError>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ParserError {
     UnexpectedEOF,
     ExpectedIdentifier(Token),
@@ -104,6 +105,11 @@ fn infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
 }
 
 impl Parser {
+
+    pub fn from_input(input: String) -> Self {
+        Parser::new(Lexer::new(input))
+    }
+
     pub fn new(lexer: Lexer) -> Self {
         let mut parser = Parser {
             lexer,
@@ -204,7 +210,6 @@ impl Parser {
         self.expect_token(Token::Lbrace, ParserError::ExpectedLbrace)?;
         while self.cur_token != Token::Rbrace {
             statements.push(self.parse_statement()?);
-            println!("{:?}", statements);
         }
         self.next_token()?; // Consume the `}`
 
@@ -305,7 +310,6 @@ impl Parser {
             None => return Err(ParserError::ExpectedExpression(self.cur_token.clone())),
         };
 
-        println!("INFIX? {:?}", self.cur_token);
         while self.cur_token != Token::Semicolon && precedence < Precedence::from(&self.cur_token) {
             left = match infix_parse_fn(&self.cur_token) {
                 Some(parse_function) => parse_function(self, left)?,

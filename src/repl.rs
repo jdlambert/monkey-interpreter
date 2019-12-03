@@ -3,7 +3,7 @@ use std::{
     io::{stdin, stdout, Write},
 };
 
-use crate::{lexer::Lexer, token::Token};
+use crate::parser::Parser;
 
 pub fn start() {
     let username = env::var("LOGNAME").unwrap_or_else(|_| "anonymous".to_string());
@@ -14,14 +14,17 @@ pub fn start() {
     println!("Feel free to type in commands");
 
     loop {
-        let input = get_input();
-        let mut lexer = Lexer::new(input);
-        loop {
-            let token = lexer.next_token();
-            if token == Token::Eof {
-                break;
-            } else {
-                println!("{:?}", token);
+        let mut parser = Parser::from_input(get_input());
+        let program = parser.parse_program();
+        match program {
+            Some(program) => {
+                println!("{}", program);
+            },
+            None => {
+                println!("Invalid input! Errors:");
+                for parser_error in parser.errors {
+                    println!("{:?}", parser_error);
+                }
             }
         }
     }
