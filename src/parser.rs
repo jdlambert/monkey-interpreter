@@ -14,6 +14,7 @@ pub struct Parser {
 pub enum ParserError {
     UnexpectedEOF,
     ExpectedIdentifier(Token),
+    ExpectedSemicolon(Token),
     ExpectedAssign(Token),
     ExpectedExpression(Token),
     ExpectedStatement(Token),
@@ -53,51 +54,46 @@ impl Parser {
     fn parse_expression(&mut self) -> Result<Expression> {
         match self.cur_token.clone() {
             Token::Int(i) => {
+                self.next_token()?;
                 Ok(Expression::IntLiteral(i))
             },
-            Token::Ident(i) => {
-                Ok(Expression::Identifier(i))
-            },
+            Token::Ident(_) => self.parse_identifier(),
             _ => Err(ParserError::ExpectedExpression(self.cur_token.clone())),
+        }
+    }
+
+    fn parse_identifier(&mut self) -> Result<Expression> {
+        match self.cur_token.clone() {
+            Token::Ident(i) => { self.next_token()?; Ok(Expression::Identifier(i))} 
+            _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
         }
     }
 
     fn parse_let_statement(&mut self) -> Result<Statement> {
         self.next_token()?; // Consume the `let`
 
-        let expression = self.parse_expression()?;
-        match expression {
-            Expression::Identifier(_) => {},
-            _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
-        }
-        self.next_token()?;
+        let identifier = self.parse_identifier()?;
         self.expect_token(Token::Assign, ParserError::ExpectedAssign)?;
         let value = self.parse_expression()?;
-        self.next_token()?;
 
-        if self.cur_token == Token::Semicolon {
-            self.next_token()?;
-        }
-
-        Ok(Statement::Let(expression, value))
+        Ok(Statement::Let(identifier, value))
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement> {
         self.next_token()?; // Consume the `return`
         let expression = self.parse_expression()?;
-        self.next_token()?;
-        if self.cur_token == Token::Semicolon {
-            self.next_token()?;
-        }
+
         Ok(Statement::Return(expression))
     }
 
     fn parse_statement(&mut self) -> Result<Statement> {
-        match self.cur_token {
-            Token::Let => Ok(self.parse_let_statement()?),
-            Token::Return => Ok(self.parse_return_statement()?),
-            _ => Ok(Statement::Expression(self.parse_expression()?))
-        }
+        let statement = match self.cur_token {
+            Token::Let => self.parse_let_statement()?,
+            Token::Return => self.parse_return_statement()?,
+            _ => Statement::Expression(self.parse_expression()?)
+        };
+        self.expect_token(Token::Semicolon, ParserError::ExpectedSemicolon)?;
+        Ok(statement)
     }
 
     pub fn parse_program(&mut self) -> Option<Program> {
@@ -172,7 +168,7 @@ mod tests {
         assert_eq!(parser.parse_program(), None);
         assert_eq!(parser.errors, vec![
           ParserError::ExpectedAssign(Token::Int(5)),
-          ParserError::ExpectedExpression(Token::Assign),
+          ParserError::ExpectedIdentifier(Token::Assign),
           ParserError::ExpectedIdentifier(Token::Int(10100101)),
         ]);
     }
@@ -194,6 +190,26 @@ mod tests {
           Statement::Return(
               Expression::IntLiteral(42)
           ),
+        ]);
+    }
+
+    #[test]
+    fn test_lone_identifiers() {
+        let input = r#"foobar; a; b;"#;
+
+        let lexer = Lexer::new(input.to_owned());
+        let mut parser = Parser::new(lexer);
+        let program = parser.parse_program().unwrap();
+        assert_eq!(program.statements, vec![
+            Statement::Expression(
+                Expression::Identifier("foobar".to_string())
+            ),
+            Statement::Expression(
+                Expression::Identifier("a".to_string())
+            ),
+            Statement::Expression(
+                Expression::Identifier("b".to_string())
+            ),
         ]);
     }
 }
