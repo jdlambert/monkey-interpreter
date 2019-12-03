@@ -187,7 +187,6 @@ impl Parser {
     }
 
     fn parse_paren_expression(&mut self) -> Result<Expression> {
-        
         self.next_token()?; // Consume the left parenthesis
         let expression = self.parse_expression(Precedence::Lowest)?;
         self.expect_token(Token::Rparen, ParserError::ExpectedRparen)?;
@@ -322,19 +321,12 @@ mod tests {
 
     #[test]
     fn test_lone_identifiers() {
-        test_parsing(vec![
-            ("foobar;", "foobar;"),
-            ("a;", "a;"),
-            ("b;", "b;"),
-        ]);
+        test_parsing(vec![("foobar;", "foobar;"), ("a;", "a;"), ("b;", "b;")]);
     }
 
     #[test]
     fn test_prefix_expressions() {
-        test_parsing(vec![
-            ("!5;", "(!5);"),
-            ("-15;", "(-15);"),
-        ]);
+        test_parsing(vec![("!5;", "(!5);"), ("-15;", "(-15);")]);
     }
 
     #[test]
@@ -378,5 +370,4 @@ mod tests {
             ("return 2 * 4 + 5;", "return ((2 * 4) + 5);"),
         ]);
     }
-
 }
