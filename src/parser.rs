@@ -20,7 +20,19 @@ pub enum ParserError {
     ExpectedStatement(Token),
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Precedence {
+    Lowest,
+    Equals,
+    LessGreater,
+    Sum,
+    Product,
+    Prefix,
+    Call,
+}
+
 type Result<T> = std::result::Result<T, ParserError>;
+type PrefixParseFn = fn(&mut Parser) -> Result<Expression>;
 
 impl Parser {
     pub fn new(lexer: Lexer) -> Self {
@@ -51,21 +63,42 @@ impl Parser {
         Ok(())
     }
 
-    fn parse_expression(&mut self) -> Result<Expression> {
+    // Prefix parse functions
+
+    fn parse_integer_literal(&mut self) -> Result<Expression> {
         match self.cur_token.clone() {
             Token::Int(i) => {
                 self.next_token()?;
                 Ok(Expression::IntLiteral(i))
-            },
-            Token::Ident(_) => self.parse_identifier(),
-            _ => Err(ParserError::ExpectedExpression(self.cur_token.clone())),
+            }
+            _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
         }
     }
 
     fn parse_identifier(&mut self) -> Result<Expression> {
         match self.cur_token.clone() {
-            Token::Ident(i) => { self.next_token()?; Ok(Expression::Identifier(i))} 
+            Token::Ident(i) => {
+                self.next_token()?;
+                Ok(Expression::Identifier(i))
+            }
             _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
+        }
+    }
+
+    fn prefix_parse_fn(&self) -> Option<PrefixParseFn> {
+        match &self.cur_token {
+            Token::Ident(_) => Some(Parser::parse_identifier),
+            Token::Int(_) => Some(Parser::parse_integer_literal),
+            _ => None,
+        }
+    }
+
+    // Expression, Statement, and Program Parsing
+
+    fn parse_expression(&mut self, _precedence: Precedence) -> Result<Expression> {
+        match self.prefix_parse_fn() {
+            Some(function) => function(self),
+            None => Err(ParserError::ExpectedExpression(self.cur_token.clone())),
         }
     }
 
@@ -74,14 +107,14 @@ impl Parser {
 
         let identifier = self.parse_identifier()?;
         self.expect_token(Token::Assign, ParserError::ExpectedAssign)?;
-        let value = self.parse_expression()?;
+        let value = self.parse_expression(Precedence::Lowest)?;
 
         Ok(Statement::Let(identifier, value))
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement> {
         self.next_token()?; // Consume the `return`
-        let expression = self.parse_expression()?;
+        let expression = self.parse_expression(Precedence::Lowest)?;
 
         Ok(Statement::Return(expression))
     }
@@ -90,7 +123,7 @@ impl Parser {
         let statement = match self.cur_token {
             Token::Let => self.parse_let_statement()?,
             Token::Return => self.parse_return_statement()?,
-            _ => Statement::Expression(self.parse_expression()?)
+            _ => Statement::Expression(self.parse_expression(Precedence::Lowest)?),
         };
         self.expect_token(Token::Semicolon, ParserError::ExpectedSemicolon)?;
         Ok(statement)
@@ -166,11 +199,14 @@ mod tests {
         let lexer = Lexer::new(input.to_owned());
         let mut parser = Parser::new(lexer);
         assert_eq!(parser.parse_program(), None);
-        assert_eq!(parser.errors, vec![
-          ParserError::ExpectedAssign(Token::Int(5)),
-          ParserError::ExpectedIdentifier(Token::Assign),
-          ParserError::ExpectedIdentifier(Token::Int(10100101)),
-        ]);
+        assert_eq!(
+            parser.errors,
+            vec![
+                ParserError::ExpectedAssign(Token::Int(5)),
+                ParserError::ExpectedIdentifier(Token::Assign),
+                ParserError::ExpectedIdentifier(Token::Int(10100101)),
+            ]
+        );
     }
 
     #[test]
@@ -180,17 +216,14 @@ mod tests {
         let lexer = Lexer::new(input.to_owned());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        assert_eq!(program.statements, vec![
-          Statement::Return(
-              Expression::IntLiteral(5)
-          ),
-          Statement::Return(
-              Expression::IntLiteral(10)
-          ),
-          Statement::Return(
-              Expression::IntLiteral(42)
-          ),
-        ]);
+        assert_eq!(
+            program.statements,
+            vec![
+                Statement::Return(Expression::IntLiteral(5)),
+                Statement::Return(Expression::IntLiteral(10)),
+                Statement::Return(Expression::IntLiteral(42)),
+            ]
+        );
     }
 
     #[test]
@@ -200,16 +233,13 @@ mod tests {
         let lexer = Lexer::new(input.to_owned());
         let mut parser = Parser::new(lexer);
         let program = parser.parse_program().unwrap();
-        assert_eq!(program.statements, vec![
-            Statement::Expression(
-                Expression::Identifier("foobar".to_string())
-            ),
-            Statement::Expression(
-                Expression::Identifier("a".to_string())
-            ),
-            Statement::Expression(
-                Expression::Identifier("b".to_string())
-            ),
-        ]);
+        assert_eq!(
+            program.statements,
+            vec![
+                Statement::Expression(Expression::Identifier("foobar".to_string())),
+                Statement::Expression(Expression::Identifier("a".to_string())),
+                Statement::Expression(Expression::Identifier("b".to_string())),
+            ]
+        );
     }
 }
