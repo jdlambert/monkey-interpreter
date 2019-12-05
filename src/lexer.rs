@@ -76,12 +76,12 @@ impl Lexer {
         self.read_position += 1;
     }
 
-    fn read_number(&mut self) -> u32 {
+    fn read_number(&mut self) -> i64 {
         let position = self.position;
         while is_digit(self.ch) {
             self.read_char();
         }
-        self.input[position..self.position].parse::<u32>().unwrap()
+        self.input[position..self.position].parse::<i64>().unwrap()
     }
 
     fn read_identifier(&mut self) -> &str {

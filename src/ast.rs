@@ -92,7 +92,7 @@ impl fmt::Display for Infix {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Identifier(String),
-    IntLiteral(u32),
+    IntLiteral(i64),
     Prefix(Prefix, Box<Expression>),
     Infix(Infix, Box<Expression>, Box<Expression>),
     If(Box<Expression>, BlockStatement, Option<BlockStatement>),
