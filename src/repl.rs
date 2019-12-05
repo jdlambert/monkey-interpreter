@@ -3,7 +3,7 @@ use std::{
     io::{stdin, stdout, Write},
 };
 
-use crate::parser::Parser;
+use crate::eval::eval_input;
 
 pub fn start() {
     let username = env::var("LOGNAME").unwrap_or_else(|_| "anonymous".to_string());
@@ -14,17 +14,13 @@ pub fn start() {
     println!("Feel free to type in commands");
 
     loop {
-        let mut parser = Parser::from_input(get_input());
-        let program = parser.parse_program();
-        match program {
-            Some(program) => {
-                println!("{}", program);
+        let result = eval_input(&get_input());
+        match result {
+            Ok(obj) => {
+                println!("{}", obj);
             },
-            None => {
-                println!("Invalid input! Errors:");
-                for parser_error in parser.errors {
-                    println!("{:?}", parser_error);
-                }
+            Err(err) => {
+                println!("Invalid input! Error: {}", err);
             }
         }
     }
