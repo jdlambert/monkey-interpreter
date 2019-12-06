@@ -18,7 +18,7 @@ pub fn start() {
         match result {
             Ok(obj) => {
                 println!("{}", obj);
-            },
+            }
             Err(err) => {
                 println!("Invalid input! Error: {}", err);
             }

@@ -108,7 +108,6 @@ fn infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
 }
 
 impl Parser {
-
     pub fn from_input(input: String) -> Self {
         Parser::new(Lexer::new(input))
     }
@@ -194,7 +193,7 @@ impl Parser {
             Token::Ident(i) => {
                 self.next_token()?;
                 Ok(Expression::Identifier(i))
-            },
+            }
             _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
         }
     }
@@ -204,11 +203,11 @@ impl Parser {
             Token::True => {
                 self.next_token()?;
                 Ok(Expression::Boolean(true))
-            },
+            }
             Token::False => {
                 self.next_token()?;
                 Ok(Expression::Boolean(false))
-            },
+            }
             _ => return Err(ParserError::ExpectedBoolean(self.cur_token.clone())),
         }
     }
@@ -238,7 +237,6 @@ impl Parser {
         self.expect_token(Token::Lparen, ParserError::ExpectedLparen)?;
 
         if self.cur_token != Token::Rparen {
-
             if let Expression::Identifier(i) = self.parse_identifier()? {
                 parameters.push(i);
             }
@@ -249,7 +247,6 @@ impl Parser {
                     parameters.push(i);
                 }
             }
-
         }
 
         self.expect_token(Token::Rparen, ParserError::ExpectedRparen)?;
@@ -274,14 +271,12 @@ impl Parser {
         let mut expressions = vec![];
 
         if self.cur_token != end_token {
-            
             expressions.push(self.parse_expression(Precedence::Lowest)?);
 
             while self.cur_token == Token::Comma {
                 self.next_token()?; // Consume the `,`
                 expressions.push(self.parse_expression(Precedence::Lowest)?);
             }
-
         }
         self.expect_token(end_token, expected)?;
 
@@ -290,7 +285,7 @@ impl Parser {
 
     fn parse_call_expression(&mut self, left: Expression) -> Result<Expression> {
         self.next_token()?; // Consume the `(`
-        
+
         let parameters = self.parse_expressions(Token::Rparen, ParserError::ExpectedRparen)?;
 
         Ok(Expression::Call(Box::new(left), parameters))
