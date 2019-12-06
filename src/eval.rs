@@ -1,4 +1,4 @@
-use crate::ast::{Expression, Infix, Prefix, Program, BlockStatement, Statement};
+use crate::ast::{BlockStatement, Expression, Infix, Prefix, Program, Statement};
 use crate::object::Object;
 use crate::{lexer::Lexer, parser::Parser};
 use std::fmt;
@@ -30,19 +30,24 @@ pub fn eval_input(input: &str) -> Result {
 }
 
 fn eval(program: &Program) -> Result {
-  eval_statements(&program.statements)
+    eval_statements(&program.statements)
 }
 
 fn eval_statements(statements: &Vec<Statement>) -> Result {
-  let mut result = Object::Null;
-  for statement in statements {
-    result = match statement {
-        Statement::Expression(expr) => eval_expression(&expr)?,
-        Statement::Return(expr) => return eval_expression(&expr),
-        _ => return Err(EvalError::Unimplemented),
+    let mut result = Object::Null;
+    for statement in statements {
+        result = match statement {
+            Statement::Expression(expr) => eval_expression(&expr)?,
+            Statement::Return(expr) => {
+                return match expr {
+                    None => Ok(Object::Null),
+                    Some(expr) => eval_expression(&expr),
+                }
+            }
+            _ => return Err(EvalError::Unimplemented),
+        }
     }
-  }
-  Ok(result)
+    Ok(result)
 }
 
 fn eval_expression(expression: &Expression) -> Result {
@@ -58,17 +63,21 @@ fn eval_expression(expression: &Expression) -> Result {
     }
 }
 
-fn eval_if_expression(condition: &Expression, then: &BlockStatement, alt: &Option<BlockStatement>) -> Result {
-  let condition = eval_expression(condition)?;
+fn eval_if_expression(
+    condition: &Expression,
+    then: &BlockStatement,
+    alt: &Option<BlockStatement>,
+) -> Result {
+    let condition = eval_expression(condition)?;
 
-  Ok(if condition.is_truthy() {
-    eval_statements(&then.statements)?
-  } else {
-    match alt {
-      None => Object::Null,
-      Some(block) => eval_statements(&block.statements)?
-    }
-  })
+    Ok(if condition.is_truthy() {
+        eval_statements(&then.statements)?
+    } else {
+        match alt {
+            None => Object::Null,
+            Some(block) => eval_statements(&block.statements)?,
+        }
+    })
 }
 
 fn eval_infix_expression(infix: &Infix, left: &Expression, right: &Expression) -> Result {
@@ -178,19 +187,17 @@ mod tests {
             ("true == false", "false"),
         ]);
     }
-    
+
     #[test]
     fn eval_conditionals() {
         expect_eval(vec![
-          ("if (false) { 10 }", "null"),
-          ("if (5 > 10) { 1 } else { 2 }", "2"),
+            ("if (false) { 10 }", "null"),
+            ("if (5 > 10) { 1 } else { 2 }", "2"),
         ]);
     }
 
     #[test]
     fn eval_returnsls() {
-        expect_eval(vec![
-          ("1 + 1; return 2; 3 + 3", "2"),
-        ]);
+        expect_eval(vec![("1 + 1; return 2; 3 + 3", "2")]);
     }
 }

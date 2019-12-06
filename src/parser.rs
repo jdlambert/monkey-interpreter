@@ -343,9 +343,13 @@ impl Parser {
 
     fn parse_return_statement(&mut self) -> Result<Statement> {
         self.next_token()?; // Consume the `return`
-        let expression = self.parse_expression(Precedence::Lowest)?;
 
-        Ok(Statement::Return(expression))
+        Ok(if self.cur_token == Token::Semicolon {
+            Statement::Return(None)
+        } else {
+            let expression = self.parse_expression(Precedence::Lowest)?;
+            Statement::Return(Some(expression))
+        })
     }
 
     fn parse_statement(&mut self) -> Result<Statement> {
@@ -430,6 +434,7 @@ mod tests {
     #[test]
     fn test_return_statements() {
         test_parsing(vec![
+            ("return;", "return;"),
             ("return 42;", "return 42;"),
             ("return x", "return x;"),
             ("return x return 2 * 3", "return x;return (2 * 3);"),

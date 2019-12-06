@@ -17,7 +17,7 @@ impl fmt::Display for Program {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Let(Expression, Expression),
-    Return(Expression),
+    Return(Option<Expression>),
     Expression(Expression),
 }
 
@@ -25,7 +25,10 @@ impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Statement::Let(left, right) => write!(f, "let {} = {};", left, right),
-            Statement::Return(expr) => write!(f, "return {};", expr),
+            Statement::Return(expr) => match expr {
+                Some(expr) => write!(f, "return {};", expr),
+                None => write!(f, "return;"),
+            },
             Statement::Expression(expr) => write!(f, "{};", expr),
         }
     }
