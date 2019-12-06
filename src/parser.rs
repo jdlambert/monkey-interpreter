@@ -17,6 +17,7 @@ pub struct Parser {
 #[derive(Debug, PartialEq, Clone)]
 pub enum ParserError {
     UnexpectedEOF,
+    ExpectedBoolean(Token),
     ExpectedIdentifier(Token),
     ExpectedSemicolon(Token),
     ExpectedAssign(Token),
@@ -80,6 +81,8 @@ fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
     match &token {
         Token::Ident(_) => Some(Parser::parse_identifier),
         Token::Int(_) => Some(Parser::parse_integer_literal),
+        Token::True => Some(Parser::parse_boolean),
+        Token::False => Some(Parser::parse_boolean),
         Token::Bang => Some(Parser::parse_prefix_bang),
         Token::Minus => Some(Parser::parse_prefix_minus),
         Token::Lparen => Some(Parser::parse_paren_expression),
@@ -191,8 +194,22 @@ impl Parser {
             Token::Ident(i) => {
                 self.next_token()?;
                 Ok(Expression::Identifier(i))
-            }
+            },
             _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
+        }
+    }
+
+    fn parse_boolean(&mut self) -> Result<Expression> {
+        match self.cur_token.clone() {
+            Token::True => {
+                self.next_token()?;
+                Ok(Expression::Boolean(true))
+            },
+            Token::False => {
+                self.next_token()?;
+                Ok(Expression::Boolean(false))
+            },
+            _ => return Err(ParserError::ExpectedBoolean(self.cur_token.clone())),
         }
     }
 
@@ -378,13 +395,11 @@ impl Parser {
 mod tests {
 
     use super::{Parser, ParserError};
-    use crate::lexer::Lexer;
     use crate::token::Token;
 
     fn test_parsing(tests: Vec<(&str, &str)>) {
         for (input, expected) in tests {
-            let lexer = Lexer::new(input.to_owned());
-            let mut parser = Parser::new(lexer);
+            let mut parser = Parser::from_input(input.to_string());
 
             let program = parser.parse_program().unwrap();
 
@@ -405,8 +420,7 @@ mod tests {
     fn test_bad_let_statements() {
         let input = r#"let x 5; let = 10; let 10100101;"#;
 
-        let lexer = Lexer::new(input.to_owned());
-        let mut parser = Parser::new(lexer);
+        let mut parser = Parser::from_input(input.to_string());
         assert_eq!(parser.parse_program(), None);
         assert_eq!(
             parser.errors,
@@ -436,6 +450,11 @@ mod tests {
     #[test]
     fn test_prefix_expressions() {
         test_parsing(vec![("!5;", "(!5);"), ("-15;", "(-15);")]);
+    }
+
+    #[test]
+    fn test_booleans() {
+        test_parsing(vec![("true false; false true", "true;false;false;true;")]);
     }
 
     #[test]
