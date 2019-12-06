@@ -19,3 +19,11 @@ impl fmt::Display for Object {
   }
 }
 
+impl Object {
+
+  pub fn is_truthy(&self) -> bool {
+    *self != Object::Null && *self != Object::Boolean(false)
+  }
+
+}
+
