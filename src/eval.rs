@@ -1,4 +1,4 @@
-use crate::ast::{Expression, Infix, Prefix, Program, Statement};
+use crate::ast::{Expression, Infix, Prefix, Program, BlockStatement, Statement};
 use crate::object::Object;
 use crate::{lexer::Lexer, parser::Parser};
 use std::fmt;
@@ -30,7 +30,11 @@ pub fn eval_input(input: &str) -> Result {
 }
 
 fn eval(program: &Program) -> Result {
-    match program.statements[0].clone() {
+  eval_statements(&program.statements)
+}
+
+fn eval_statements(statements: &Vec<Statement>) -> Result {
+    match statements[0].clone() {
         Statement::Expression(expr) => eval_expression(&expr),
         _ => Err(EvalError::Unimplemented),
     }
@@ -44,8 +48,22 @@ fn eval_expression(expression: &Expression) -> Result {
         Expression::Infix(infix, left, right) => {
             eval_infix_expression(infix, left.as_ref(), right.as_ref())
         }
+        Expression::If(condition, then, alt) => eval_if_expression(condition, then, alt),
         _ => Err(EvalError::Unimplemented),
     }
+}
+
+fn eval_if_expression(condition: &Expression, then: &BlockStatement, alt: &Option<BlockStatement>) -> Result {
+  let condition = eval_expression(condition)?;
+
+  Ok(if condition.is_truthy() {
+    eval_statements(&then.statements)?
+  } else {
+    match alt {
+      None => Object::Null,
+      Some(block) => eval_statements(&block.statements)?
+    }
+  })
 }
 
 fn eval_infix_expression(infix: &Infix, left: &Expression, right: &Expression) -> Result {
@@ -153,6 +171,14 @@ mod tests {
             ("5 == 5", "true"),
             ("(5 == 5) != (3 != 2)", "false"),
             ("true == false", "false"),
+        ]);
+    }
+    
+    #[test]
+    fn eval_conditionals() {
+        expect_eval(vec![
+          ("if (false) { 10 }", "null"),
+          ("if (5 > 10) { 1 } else { 2 }", "2"),
         ]);
     }
 }
