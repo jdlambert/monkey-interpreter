@@ -22,6 +22,7 @@ fn eval(program: &Program) -> Result {
 fn eval_expression(expression: Expression) -> Result {
   match expression {
     Expression::IntLiteral(val) => Ok(Object::Integer(val)),
+    Expression::Boolean(val) => Ok(Object::Boolean(val)),
     _ => Err("unimplemented")
   }
 }
@@ -35,6 +36,13 @@ mod tests {
   fn eval_integer() {
       expect_eval(vec![
           ("5", "5"),
+      ]);
+  }
+  
+  #[test]
+  fn eval_bool() {
+      expect_eval(vec![
+          ("true", "true"),
       ]);
   }
   
