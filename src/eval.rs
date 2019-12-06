@@ -34,10 +34,15 @@ fn eval(program: &Program) -> Result {
 }
 
 fn eval_statements(statements: &Vec<Statement>) -> Result {
-    match statements[0].clone() {
-        Statement::Expression(expr) => eval_expression(&expr),
-        _ => Err(EvalError::Unimplemented),
+  let mut result = Object::Null;
+  for statement in statements {
+    result = match statement {
+        Statement::Expression(expr) => eval_expression(&expr)?,
+        Statement::Return(expr) => return eval_expression(&expr),
+        _ => return Err(EvalError::Unimplemented),
     }
+  }
+  Ok(result)
 }
 
 fn eval_expression(expression: &Expression) -> Result {
@@ -179,6 +184,13 @@ mod tests {
         expect_eval(vec![
           ("if (false) { 10 }", "null"),
           ("if (5 > 10) { 1 } else { 2 }", "2"),
+        ]);
+    }
+
+    #[test]
+    fn eval_returnsls() {
+        expect_eval(vec![
+          ("1 + 1; return 2; 3 + 3", "2"),
         ]);
     }
 }
