@@ -1,26 +1,38 @@
 use crate::ast::{BlockStatement, Expression, Infix, Prefix, Program, Statement};
+use crate::builtins;
 use crate::object::Object;
 use crate::{environment::Environment, lexer::Lexer, parser::Parser};
 use std::fmt;
 
 pub type Result = std::result::Result<Object, EvalError>;
 
+#[derive(Debug)]
 pub enum EvalError {
     Unimplemented,
     TypeMismatch(Infix, Object, Object),
     InvalidLValue(Expression),
     InvalidCallValue(Expression),
+    WrongNumberOfArgs { expected: usize, actual: usize },
+    InvalidArgument { to: String, arg: Object },
 }
 
 impl fmt::Display for EvalError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             EvalError::Unimplemented => write!(f, "Unimplemented!"),
+            EvalError::InvalidArgument { to, arg } => {
+                write!(f, "Invalid argument to {}: {}", to, arg)
+            }
             EvalError::TypeMismatch(infix, left, right) => {
                 write!(f, "Type mismatch: {} {} {}", left, infix, right)
             }
             EvalError::InvalidLValue(expr) => write!(f, "Invalid L value: {}", expr),
             EvalError::InvalidCallValue(expr) => write!(f, "Invalid call value: {}", expr),
+            EvalError::WrongNumberOfArgs { actual, expected } => write!(
+                f,
+                "Invalid number of args: saw {}, expected {}",
+                actual, expected
+            ),
         }
     }
 }
@@ -83,9 +95,12 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
 }
 
 fn eval_identifier(ident: &str, env: &Environment) -> Result {
-    match env.get(ident) {
-        Some(value) => Ok(value),
-        None => Ok(Object::Null),
+    if let Some(value) = env.get(ident) {
+        Ok(value)
+    } else if let Some(value) = builtins::get(ident) {
+        Ok(value)
+    } else {
+        Ok(Object::Null)
     }
 }
 
@@ -169,15 +184,21 @@ fn eval_prefix_expression(prefix: &Prefix, expression: &Expression, env: &Enviro
 
 fn eval_call(name: &Expression, input_args: &Vec<Expression>, calling_env: &Environment) -> Result {
     let function = eval_expression(name, calling_env)?;
+    let mut obj_args = vec![];
+    for expr in input_args {
+        obj_args.push(eval_expression(expr, calling_env)?);
+    }
 
-    if let Object::Function(args, body, enclosed_env) = function {
-        let inner_env = enclosed_env.extend();
-        for (param_name, expr) in args.iter().zip(input_args) {
-            inner_env.set(&param_name, eval_expression(expr, calling_env)?);
+    match function {
+        Object::Function(func_args, body, enclosed_env) => {
+            let inner_env = enclosed_env.extend();
+            for (param_name, obj) in func_args.iter().zip(obj_args) {
+                inner_env.set(&param_name, obj);
+            }
+            eval_statements(&body.statements, &inner_env)
         }
-        eval_statements(&body.statements, &inner_env)
-    } else {
-        Err(EvalError::InvalidCallValue(name.clone()))
+        Object::BuiltIn(builtins::BuiltInFn { func, .. }) => func(&obj_args),
+        _ => Err(EvalError::InvalidCallValue(name.clone())),
     }
 }
 
