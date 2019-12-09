@@ -358,6 +358,7 @@ mod tests {
         expect_eval(vec![
             (r#"let a = "how long could it be???"; len(a)"#, "23"),
             ("let a = [1, 2, 3]; len(a)", "3"),
+            ("let a = [1, 2, 3]; first(a)", "1")
         ])
     }
 

@@ -30,7 +30,7 @@ macro_rules! builtin {
     };
 }
 
-const BUILTINS: &[BuiltInFn] = &[builtin!(len)];
+const BUILTINS: &[BuiltInFn] = &[builtin!(len), builtin!(first)];
 
 pub fn get(name: &str) -> Option<Object> {
     match BUILTINS.iter().find(|builtin| name == builtin.name) {
@@ -46,6 +46,21 @@ fn len(arguments: &Vec<Object>) -> eval::Result {
         Some(Object::Array(a)) => Ok(Object::Integer(a.len() as i64)),
         _ => Err(EvalError::InvalidArgument {
             to: "len".to_string(),
+            arg: if let Some(obj) = arguments.first() {
+                obj.clone()
+            } else {
+                Object::Null
+            },
+        }),
+    }
+}
+
+fn first(arguments: &Vec<Object>) -> eval::Result {
+    eval::check_arguments_len(arguments, 1)?;
+    match arguments.first() {
+        Some(Object::Array(a)) => Ok(a[0].clone()),
+        _ => Err(EvalError::InvalidArgument {
+            to: "first".to_string(),
             arg: if let Some(obj) = arguments.first() {
                 obj.clone()
             } else {
