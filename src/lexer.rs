@@ -103,6 +103,7 @@ impl Lexer {
            out.push(self.ch);
            self.read_char(); 
         }
+        self.read_char(); // Consume the final `"`
         out
     }
 

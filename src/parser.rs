@@ -441,7 +441,8 @@ mod tests {
 
     #[test]
     fn test_strings() {
-        test_parsing(vec![(r#""string!""another string!""#, r#""string!"; "another string!";"#)]);
+        test_parsing(vec![(r#""string!""another string!""#, 
+                           r#""string!";"another string!";"#)]);
     }
 
     #[test]

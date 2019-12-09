@@ -110,7 +110,7 @@ impl fmt::Display for Expression {
         match self {
             Expression::Identifier(ident) => write!(f, "{}", ident),
             Expression::IntLiteral(value) => write!(f, "{}", value),
-            Expression::String(value) => write!(f, "{}", value),
+            Expression::String(value) => write!(f, "\"{}\"", value),
             Expression::Boolean(value) => write!(f, "{}", value),
             Expression::Prefix(operator, exp) => write!(f, "({}{})", operator, exp),
             Expression::Infix(operator, left, right) => {
