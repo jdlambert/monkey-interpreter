@@ -39,17 +39,8 @@ pub fn get(name: &str) -> Option<Object> {
     }
 }
 
-fn check_arguments_len(arguments: &Vec<Object>, expected: usize) -> Result<(), EvalError> {
-    let actual = arguments.len();
-    if actual == expected {
-        Ok(())
-    } else {
-        Err(EvalError::WrongNumberOfArgs { actual, expected })
-    }
-}
-
 fn len(arguments: &Vec<Object>) -> eval::Result {
-    check_arguments_len(arguments, 1)?;
+    eval::check_arguments_len(arguments, 1)?;
     if let Some(obj) = arguments.first() {
         if let Object::String(s) = obj {
             Ok(Object::Integer(s.len() as i64))

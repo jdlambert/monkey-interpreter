@@ -182,6 +182,15 @@ fn eval_prefix_expression(prefix: &Prefix, expression: &Expression, env: &Enviro
     }
 }
 
+pub fn check_arguments_len(arguments: &Vec<Object>, expected: usize) -> std::result::Result<(), EvalError> {
+    let actual = arguments.len();
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(EvalError::WrongNumberOfArgs { actual, expected })
+    }
+}
+
 fn eval_call(name: &Expression, input_args: &Vec<Expression>, calling_env: &Environment) -> Result {
     let function = eval_expression(name, calling_env)?;
     let mut obj_args = vec![];
@@ -191,6 +200,7 @@ fn eval_call(name: &Expression, input_args: &Vec<Expression>, calling_env: &Envi
 
     match function {
         Object::Function(func_args, body, enclosed_env) => {
+            check_arguments_len(&obj_args, func_args.len())?;
             let inner_env = enclosed_env.extend();
             for (param_name, obj) in func_args.iter().zip(obj_args) {
                 inner_env.set(&param_name, obj);
