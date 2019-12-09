@@ -4,6 +4,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct Environment {
     store: Rc<RefCell<HashMap<String, Object>>>,
+    outer: Option<Box<Environment>>,
 }
 
 impl Environment {
@@ -15,7 +16,13 @@ impl Environment {
         let store = self.store.borrow();
         match store.get(name) {
             Some(value) => Some(value.clone()),
-            None => None,
+            None => {
+                if let Some(outer) = &self.outer {
+                    outer.get(name)
+                } else {
+                    None
+                }
+            },
         }
     }
 
@@ -23,4 +30,12 @@ impl Environment {
         let mut store = self.store.borrow_mut();
         store.insert(name.to_string(), val);
     }
+
+    pub fn extend(&self) -> Self {
+        Environment {
+            outer: Some(Box::new(self.clone())),
+            ..Default::default()
+        }
+    }
+
 }

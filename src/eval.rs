@@ -9,6 +9,7 @@ pub enum EvalError {
     Unimplemented,
     TypeMismatch(Infix, Object, Object),
     InvalidLValue(Expression),
+    InvalidCallValue(Expression),
 }
 
 impl fmt::Display for EvalError {
@@ -18,7 +19,8 @@ impl fmt::Display for EvalError {
             EvalError::TypeMismatch(infix, left, right) => {
                 write!(f, "Type mismatch: {} {} {}", left, infix, right)
             }
-            EvalError::InvalidLValue(expr) => write!(f, "Invalid L Value {}!", expr),
+            EvalError::InvalidLValue(expr) => write!(f, "Invalid L value: {}", expr),
+            EvalError::InvalidCallValue(expr) => write!(f, "Invalid call value: {}", expr),
         }
     }
 }
@@ -74,8 +76,8 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
         Expression::Identifier(ident) => eval_identifier(ident, env),
         Expression::Function(args, body) => {
             Ok(Object::Function(args.clone(), body.clone(), env.clone()))
-        }
-        _ => Err(EvalError::Unimplemented),
+        },
+        Expression::Call(name, args) => eval_call(name, args, env),
     }
 }
 
@@ -160,6 +162,20 @@ fn eval_prefix_expression(prefix: &Prefix, expression: &Expression, env: &Enviro
             Object::Integer(val) => Ok(Object::Integer(-val)),
             _ => Err(EvalError::Unimplemented),
         },
+    }
+}
+
+fn eval_call(name: &Expression, input_args: &Vec<Expression>, calling_env: &Environment) -> Result {
+    let function = eval_expression(name, calling_env)?;
+
+    if let Object::Function(args, body, enclosed_env) = function {
+        let inner_env = enclosed_env.extend();
+        for (param_name, expr) in args.iter().zip(input_args) {
+            inner_env.set(&param_name, eval_expression(expr, calling_env)?);
+        }
+        eval_statements(&body.statements, &inner_env) 
+    } else {
+        Err(EvalError::InvalidCallValue(name.clone()))
     }
 }
 
