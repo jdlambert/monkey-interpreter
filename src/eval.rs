@@ -8,6 +8,7 @@ pub type Result = std::result::Result<Object, EvalError>;
 pub enum EvalError {
     Unimplemented,
     TypeMismatch(Infix, Object, Object),
+    InvalidLValue(Expression),
 }
 
 impl fmt::Display for EvalError {
@@ -17,6 +18,7 @@ impl fmt::Display for EvalError {
             EvalError::TypeMismatch(infix, left, right) => {
                 write!(f, "Type mismatch: {} {} {}", left, infix, right)
             }
+            EvalError::InvalidLValue(expr)=> write!(f, "Invalid L Value {}!", expr),
         }
     }
 }
@@ -44,11 +46,21 @@ fn eval_statements(statements: &Vec<Statement>, env: &Environment) -> Result {
                     None => Ok(Object::Null),
                     Some(expr) => eval_expression(&expr, &env),
                 }
-            }
+            },
+            Statement::Let(left, right) => eval_let_statement(&left, &right, &env)?,
             _ => return Err(EvalError::Unimplemented),
         }
     }
     Ok(result)
+}
+
+fn eval_let_statement(left: &Expression, right: &Expression, env: &Environment) -> Result {
+    let right = eval_expression(right, env)?;
+    match left {
+        Expression::Identifier(name) => env.set(&name, right.clone()),
+        _ => return Err(EvalError::InvalidLValue(left.clone())),
+    }
+    Ok(right)
 }
 
 fn eval_expression(expression: &Expression, env: &Environment) -> Result {
