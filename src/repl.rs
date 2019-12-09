@@ -3,7 +3,7 @@ use std::{
     io::{stdin, stdout, Write},
 };
 
-use crate::{eval::eval_input, environment::Environment};
+use crate::{environment::Environment, eval::eval_input};
 
 pub fn start() {
     let username = env::var("LOGNAME").unwrap_or_else(|_| "anonymous".to_string());

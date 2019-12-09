@@ -255,7 +255,7 @@ fn eval_array(expr_members: &Vec<Expression>, env: &Environment) -> Result {
 #[cfg(test)]
 mod tests {
 
-    use crate::{eval, environment::Environment};
+    use crate::{environment::Environment, eval};
 
     fn expect_eval(tests: Vec<(&str, &str)>) {
         for (input, expected) in &tests {
@@ -354,7 +354,7 @@ mod tests {
         expect_eval(vec![
             (r#"let a = "how long could it be???"; len(a)"#, "23"),
             ("let a = [1, 2, 3]; len(a)", "3"),
-            ("let a = [1, 2, 3]; first(a)", "1")
+            ("let a = [1, 2, 3]; first(a)", "1"),
         ])
     }
 
