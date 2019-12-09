@@ -11,7 +11,7 @@ pub struct BuiltInFn {
 
 impl fmt::Debug for BuiltInFn {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "<builtin: {} >", self.name)
+        write!(f, "{}", self.name)
     }
 }
 

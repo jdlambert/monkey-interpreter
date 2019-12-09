@@ -296,4 +296,9 @@ mod tests {
             ("let add = fn(a, b) { a + b }; add(1, 2)", "3"),
         ]);
     }
+
+    #[test]
+    fn eval_builtins() {
+        expect_eval(vec![(r#"let a = "how long could it be???"; len(a)"#, "23")])
+    }
 }
