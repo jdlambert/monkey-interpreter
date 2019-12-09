@@ -1,6 +1,6 @@
 use crate::ast::{BlockStatement, Expression, Infix, Prefix, Program, Statement};
 use crate::object::Object;
-use crate::{lexer::Lexer, parser::Parser};
+use crate::{lexer::Lexer, parser::Parser, environment::Environment};
 use std::fmt;
 
 pub type Result = std::result::Result<Object, EvalError>;
@@ -30,18 +30,19 @@ pub fn eval_input(input: &str) -> Result {
 }
 
 fn eval(program: &Program) -> Result {
-    eval_statements(&program.statements)
+    let env = Environment::new();
+    eval_statements(&program.statements, &env)
 }
 
-fn eval_statements(statements: &Vec<Statement>) -> Result {
+fn eval_statements(statements: &Vec<Statement>, env: &Environment) -> Result {
     let mut result = Object::Null;
     for statement in statements {
         result = match statement {
-            Statement::Expression(expr) => eval_expression(&expr)?,
+            Statement::Expression(expr) => eval_expression(&expr, &env)?,
             Statement::Return(expr) => {
                 return match expr {
                     None => Ok(Object::Null),
-                    Some(expr) => eval_expression(&expr),
+                    Some(expr) => eval_expression(&expr, &env),
                 }
             }
             _ => return Err(EvalError::Unimplemented),
@@ -50,16 +51,24 @@ fn eval_statements(statements: &Vec<Statement>) -> Result {
     Ok(result)
 }
 
-fn eval_expression(expression: &Expression) -> Result {
+fn eval_expression(expression: &Expression, env: &Environment) -> Result {
     match expression {
         Expression::IntLiteral(val) => Ok(Object::Integer(*val)),
         Expression::Boolean(val) => Ok(Object::Boolean(*val)),
-        Expression::Prefix(prefix, expr) => eval_prefix_expression(prefix, expr.as_ref()),
+        Expression::Prefix(prefix, expr) => eval_prefix_expression(prefix, expr.as_ref(), env),
         Expression::Infix(infix, left, right) => {
-            eval_infix_expression(infix, left.as_ref(), right.as_ref())
+            eval_infix_expression(infix, left.as_ref(), right.as_ref(), env)
         }
-        Expression::If(condition, then, alt) => eval_if_expression(condition, then, alt),
+        Expression::If(condition, then, alt) => eval_if_expression(condition, then, alt, env),
+        Expression::Identifier(ident) => eval_identifier(ident, env),
         _ => Err(EvalError::Unimplemented),
+    }
+}
+
+fn eval_identifier(ident: &str, env: &Environment) -> Result {
+    match env.get(ident) {
+        Some(value) => Ok(value),
+        None => Ok(Object::Null),
     }
 }
 
@@ -67,22 +76,23 @@ fn eval_if_expression(
     condition: &Expression,
     then: &BlockStatement,
     alt: &Option<BlockStatement>,
+    env: &Environment,
 ) -> Result {
-    let condition = eval_expression(condition)?;
+    let condition = eval_expression(condition, env)?;
 
     Ok(if condition.is_truthy() {
-        eval_statements(&then.statements)?
+        eval_statements(&then.statements, env)?
     } else {
         match alt {
             None => Object::Null,
-            Some(block) => eval_statements(&block.statements)?,
+            Some(block) => eval_statements(&block.statements, env)?,
         }
     })
 }
 
-fn eval_infix_expression(infix: &Infix, left: &Expression, right: &Expression) -> Result {
-    let left_obj = eval_expression(left)?;
-    let right_obj = eval_expression(right)?;
+fn eval_infix_expression(infix: &Infix, left: &Expression, right: &Expression, env: &Environment) -> Result {
+    let left_obj = eval_expression(left, env)?;
+    let right_obj = eval_expression(right, env)?;
 
     match (left_obj, right_obj) {
         (Object::Boolean(left), Object::Boolean(right)) => {
@@ -122,8 +132,8 @@ fn eval_integer_infix_expression(infix: &Infix, left: i64, right: i64) -> Result
     })
 }
 
-fn eval_prefix_expression(prefix: &Prefix, expression: &Expression) -> Result {
-    let obj = eval_expression(expression)?;
+fn eval_prefix_expression(prefix: &Prefix, expression: &Expression, env: &Environment) -> Result {
+    let obj = eval_expression(expression, env)?;
 
     match prefix {
         Prefix::Bang => Ok(Object::Boolean(!obj.is_truthy())),
