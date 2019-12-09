@@ -3,7 +3,7 @@ use std::{
     io::{stdin, stdout, Write},
 };
 
-use crate::eval::eval_input;
+use crate::{eval::eval_input, environment::Environment};
 
 pub fn start() {
     let username = env::var("LOGNAME").unwrap_or_else(|_| "anonymous".to_string());
@@ -13,8 +13,9 @@ pub fn start() {
     );
     println!("Feel free to type in commands");
 
+    let env = Environment::new();
     loop {
-        let result = eval_input(&get_input());
+        let result = eval_input(&get_input(), &env);
         match result {
             Ok(obj) => {
                 println!("{}", obj);

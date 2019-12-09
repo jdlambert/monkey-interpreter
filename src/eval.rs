@@ -45,16 +45,11 @@ impl fmt::Display for EvalError {
     }
 }
 
-pub fn eval_input(input: &str) -> Result {
+pub fn eval_input(input: &str, env: &Environment) -> Result {
     let lexer = Lexer::new(input.to_owned());
     let mut parser = Parser::new(lexer);
 
     let program = parser.parse_program().unwrap();
-    eval(&program)
-}
-
-fn eval(program: &Program) -> Result {
-    let env = Environment::new();
     eval_statements(&program.statements, &env)
 }
 
@@ -260,11 +255,12 @@ fn eval_array(expr_members: &Vec<Expression>, env: &Environment) -> Result {
 #[cfg(test)]
 mod tests {
 
-    use crate::eval;
+    use crate::{eval, environment::Environment};
 
     fn expect_eval(tests: Vec<(&str, &str)>) {
         for (input, expected) in &tests {
-            match eval::eval_input(input) {
+            let env = Environment::new();
+            match eval::eval_input(input, &env) {
                 Ok(obj) => {
                     assert_eq!(
                         obj.to_string(),
