@@ -103,6 +103,7 @@ pub enum Expression {
     If(Box<Expression>, BlockStatement, Option<BlockStatement>),
     Function(Vec<String>, BlockStatement),
     Call(Box<Expression>, Vec<Expression>),
+    Array(Vec<Expression>),
 }
 
 impl fmt::Display for Expression {
@@ -133,6 +134,14 @@ impl fmt::Display for Expression {
                     .collect::<Vec<String>>()
                     .join(", ");
                 write!(f, "{}({})", name, parameters)
+            }
+            Expression::Array(members) => {
+                let members = members
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<std::string::String>>()
+                    .join(", ");
+                write!(f, "[{}]", members)
             }
         }
     }

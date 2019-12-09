@@ -91,6 +91,7 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
             Ok(Object::Function(args.clone(), body.clone(), env.clone()))
         }
         Expression::Call(name, args) => eval_call(name, args, env),
+        Expression::Array(members) => eval_array(members, env),
     }
 }
 
@@ -212,6 +213,15 @@ fn eval_call(name: &Expression, input_args: &Vec<Expression>, calling_env: &Envi
     }
 }
 
+fn eval_array(expr_members: &Vec<Expression>, env: &Environment) -> Result {
+    let mut obj_members = vec![];
+    for expr in expr_members {
+        obj_members.push(eval_expression(expr, env)?);
+    }
+
+    Ok(Object::Array(obj_members))
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -241,6 +251,7 @@ mod tests {
             ("5", "5"),
             ("true", "true"),
             ("fn (a, b) { return a + b }", "fn(a, b) { return (a + b); }"),
+            ("[1, 2, 3]", "[1, 2, 3]")
         ]);
     }
 

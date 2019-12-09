@@ -39,6 +39,8 @@ impl Lexer {
             '+' => Token::Plus,
             '{' => Token::Lbrace,
             '}' => Token::Rbrace,
+            '[' => Token::Lbracket,
+            ']' => Token::Rbracket,
             '-' => Token::Minus,
             '!' => {
                 if '=' == self.peek_char() {

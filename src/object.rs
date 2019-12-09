@@ -9,6 +9,7 @@ pub enum Object {
     String(std::string::String),
     Function(Vec<std::string::String>, BlockStatement, Environment),
     BuiltIn(&'static BuiltInFn),
+    Array(Vec<Object>),
 }
 
 use Object::*;
@@ -22,6 +23,14 @@ impl fmt::Display for Object {
             String(value) => write!(f, "\"{}\"", value),
             Function(args, body, _) => write!(f, "fn({}) {}", args.join(", "), body),
             BuiltIn(builtin) => write!(f, "{:?}", builtin),
+            Array(members) => {
+                let members = members
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<std::string::String>>()
+                    .join(", ");
+                write!(f, "[{}]", members)
+            }
         }
     }
 }

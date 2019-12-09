@@ -28,6 +28,7 @@ pub enum ParserError {
     ExpectedRparen(Token),
     ExpectedLbrace(Token),
     ExpectedRbrace(Token),
+    ExpectedRbracket(Token),
     ExpectedComma(Token),
 }
 
@@ -82,6 +83,7 @@ fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
         Token::Ident(_) => Some(Parser::parse_identifier),
         Token::Int(_) => Some(Parser::parse_literal),
         Token::String(_) => Some(Parser::parse_literal),
+        Token::Lbracket => Some(Parser::parse_array),
         Token::True => Some(Parser::parse_literal),
         Token::False => Some(Parser::parse_literal),
         Token::Bang => Some(Parser::parse_prefix_bang),
@@ -251,6 +253,14 @@ impl Parser {
         self.expect_token(Token::Rparen, ParserError::ExpectedRparen)?;
 
         Ok(parameters)
+    }
+    
+    fn parse_array(&mut self) -> Result<Expression> {
+        self.next_token()?; // Consume the `[`
+
+        let members = self.parse_expressions(Token::Rbracket, ParserError::ExpectedRbracket)?;
+
+        Ok(Expression::Array(members))
     }
 
     fn parse_function_literal(&mut self) -> Result<Expression> {
