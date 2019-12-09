@@ -123,6 +123,9 @@ fn eval_infix_expression(
         (Object::Integer(left), Object::Integer(right)) => {
             eval_integer_infix_expression(infix, left, right)
         }
+        (Object::String(left), Object::String(right)) => {
+            Ok(Object::String(left + &right))
+        }
         (left, right) => Err(EvalError::TypeMismatch(infix.clone(), left, right)),
     }
 }
@@ -243,6 +246,13 @@ mod tests {
         expect_eval(vec![
             ("if (false) { 10 }", "null"),
             ("if (5 > 10) { 1 } else { 2 }", "2"),
+        ]);
+    }
+    
+    #[test]
+    fn eval_string_concat() {
+        expect_eval(vec![
+            (r#""Hello" + " " + "World!""#, r#""Hello World!""#),
         ]);
     }
 
