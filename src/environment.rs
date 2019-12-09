@@ -1,13 +1,12 @@
 use crate::object::Object;
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub struct Environment {
     store: Rc<RefCell<HashMap<String, Object>>>,
 }
 
 impl Environment {
-
     pub fn new() -> Self {
         Default::default()
     }
@@ -24,5 +23,4 @@ impl Environment {
         let mut store = self.store.borrow_mut();
         store.insert(name.to_string(), val);
     }
-
 }

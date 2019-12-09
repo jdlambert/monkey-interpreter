@@ -1,6 +1,6 @@
 use crate::ast::{BlockStatement, Expression, Infix, Prefix, Program, Statement};
 use crate::object::Object;
-use crate::{lexer::Lexer, parser::Parser, environment::Environment};
+use crate::{environment::Environment, lexer::Lexer, parser::Parser};
 use std::fmt;
 
 pub type Result = std::result::Result<Object, EvalError>;
@@ -18,7 +18,7 @@ impl fmt::Display for EvalError {
             EvalError::TypeMismatch(infix, left, right) => {
                 write!(f, "Type mismatch: {} {} {}", left, infix, right)
             }
-            EvalError::InvalidLValue(expr)=> write!(f, "Invalid L Value {}!", expr),
+            EvalError::InvalidLValue(expr) => write!(f, "Invalid L Value {}!", expr),
         }
     }
 }
@@ -46,7 +46,7 @@ fn eval_statements(statements: &Vec<Statement>, env: &Environment) -> Result {
                     None => Ok(Object::Null),
                     Some(expr) => eval_expression(&expr, &env),
                 }
-            },
+            }
             Statement::Let(left, right) => eval_let_statement(&left, &right, &env)?,
         }
     }
@@ -72,6 +72,9 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
         }
         Expression::If(condition, then, alt) => eval_if_expression(condition, then, alt, env),
         Expression::Identifier(ident) => eval_identifier(ident, env),
+        Expression::Function(args, body) => {
+            Ok(Object::Function(args.clone(), body.clone(), env.clone()))
+        }
         _ => Err(EvalError::Unimplemented),
     }
 }
@@ -101,7 +104,12 @@ fn eval_if_expression(
     })
 }
 
-fn eval_infix_expression(infix: &Infix, left: &Expression, right: &Expression, env: &Environment) -> Result {
+fn eval_infix_expression(
+    infix: &Infix,
+    left: &Expression,
+    right: &Expression,
+    env: &Environment,
+) -> Result {
     let left_obj = eval_expression(left, env)?;
     let right_obj = eval_expression(right, env)?;
 
@@ -180,7 +188,11 @@ mod tests {
 
     #[test]
     fn eval_literals() {
-        expect_eval(vec![("5", "5"), ("true", "true")]);
+        expect_eval(vec![
+            ("5", "5"),
+            ("true", "true"),
+            ("fn (a, b) { return a + b }", "fn(a, b) { return (a + b); }"),
+        ]);
     }
 
     #[test]
@@ -224,6 +236,20 @@ mod tests {
 
     #[test]
     fn eval_bindings() {
-        expect_eval(vec![("x", "null"), ("let x = 1; x", "1"), ("let x = 10; let y = 42; x + y", "52")]);
+        expect_eval(vec![
+            ("x", "null"),
+            ("let x = 1; x", "1"),
+            ("let x = 10; let y = 42; x + y", "52"),
+        ]);
+    }
+
+    #[test]
+    fn eval_calls() {
+        expect_eval(vec![
+            ("let add = fn(a, b) { return a + b }; add(1, 2)", "3"),
+            ("let add = fn(a, b) { return a + b; }; add(1, 2)", "3"),
+            ("let add = fn(a, b) { a + b; }; add(1, 2)", "3"),
+            ("let add = fn(a, b) { a + b }; add(1, 2)", "3"),
+        ]);
     }
 }

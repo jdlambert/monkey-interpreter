@@ -393,7 +393,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
 
-    use super::{Parser};
+    use super::Parser;
 
     fn test_parsing(tests: Vec<(&str, &str)>) {
         for (input, expected) in tests {
