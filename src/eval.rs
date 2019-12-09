@@ -68,6 +68,7 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
     match expression {
         Expression::IntLiteral(val) => Ok(Object::Integer(*val)),
         Expression::Boolean(val) => Ok(Object::Boolean(*val)),
+        Expression::String(val) => Ok(Object::String(val.clone())),
         Expression::Prefix(prefix, expr) => eval_prefix_expression(prefix, expr.as_ref(), env),
         Expression::Infix(infix, left, right) => {
             eval_infix_expression(infix, left.as_ref(), right.as_ref(), env)

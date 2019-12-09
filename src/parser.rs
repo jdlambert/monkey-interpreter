@@ -80,9 +80,10 @@ impl TryFrom<&Token> for Infix {
 fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
     match &token {
         Token::Ident(_) => Some(Parser::parse_identifier),
-        Token::Int(_) => Some(Parser::parse_integer_literal),
-        Token::True => Some(Parser::parse_boolean),
-        Token::False => Some(Parser::parse_boolean),
+        Token::Int(_) => Some(Parser::parse_literal),
+        Token::String(_) => Some(Parser::parse_literal),
+        Token::True => Some(Parser::parse_literal),
+        Token::False => Some(Parser::parse_literal),
         Token::Bang => Some(Parser::parse_prefix_bang),
         Token::Minus => Some(Parser::parse_prefix_minus),
         Token::Lparen => Some(Parser::parse_paren_expression),
@@ -178,11 +179,23 @@ impl Parser {
         }
     }
 
-    fn parse_integer_literal(&mut self) -> Result<Expression> {
+    fn parse_literal(&mut self) -> Result<Expression> {
         match self.cur_token.clone() {
             Token::Int(i) => {
                 self.next_token()?;
                 Ok(Expression::IntLiteral(i))
+            }
+            Token::String(s) => {
+                self.next_token()?;
+                Ok(Expression::String(s))
+            },
+            Token::True => {
+                self.next_token()?;
+                Ok(Expression::Boolean(true))
+            }
+            Token::False => {
+                self.next_token()?;
+                Ok(Expression::Boolean(false))
             }
             _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
         }
@@ -195,20 +208,6 @@ impl Parser {
                 Ok(Expression::Identifier(i))
             }
             _ => return Err(ParserError::ExpectedIdentifier(self.cur_token.clone())),
-        }
-    }
-
-    fn parse_boolean(&mut self) -> Result<Expression> {
-        match self.cur_token.clone() {
-            Token::True => {
-                self.next_token()?;
-                Ok(Expression::Boolean(true))
-            }
-            Token::False => {
-                self.next_token()?;
-                Ok(Expression::Boolean(false))
-            }
-            _ => return Err(ParserError::ExpectedBoolean(self.cur_token.clone())),
         }
     }
 
@@ -438,6 +437,11 @@ mod tests {
     #[test]
     fn test_booleans() {
         test_parsing(vec![("true false; false true", "true;false;false;true;")]);
+    }
+
+    #[test]
+    fn test_strings() {
+        test_parsing(vec![(r#""string!""another string!""#, r#""string!"; "another string!";"#)]);
     }
 
     #[test]
