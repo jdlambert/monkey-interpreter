@@ -144,9 +144,7 @@ impl fmt::Display for Expression {
                     .join(", ");
                 write!(f, "[{}]", members)
             }
-            Expression::Index(indexee, index) => {
-                write!(f, "{}[{}]", indexee, index)
-            }
+            Expression::Index(indexee, index) => write!(f, "{}[{}]", indexee, index),
         }
     }
 }

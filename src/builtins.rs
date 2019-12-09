@@ -41,16 +41,16 @@ pub fn get(name: &str) -> Option<Object> {
 
 fn len(arguments: &Vec<Object>) -> eval::Result {
     eval::check_arguments_len(arguments, 1)?;
-    if let Some(obj) = arguments.first() {
-        if let Object::String(s) = obj {
-            Ok(Object::Integer(s.len() as i64))
-        } else {
-            Err(EvalError::InvalidArgument {
-                to: "len".to_string(),
-                arg: obj.clone(),
-            })
-        }
-    } else {
-        Err(EvalError::Unimplemented)
+    match arguments.first() {
+        Some(Object::String(s)) => Ok(Object::Integer(s.len() as i64)),
+        Some(Object::Array(a)) => Ok(Object::Integer(a.len() as i64)),
+        _ => Err(EvalError::InvalidArgument {
+            to: "len".to_string(),
+            arg: if let Some(obj) = arguments.first() {
+                obj.clone()
+            } else {
+                Object::Null
+            },
+        }),
     }
 }

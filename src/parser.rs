@@ -257,7 +257,7 @@ impl Parser {
 
         Ok(parameters)
     }
-    
+
     fn parse_array_index(&mut self, left: Expression) -> Result<Expression> {
         self.next_token()?; // Consume the `[`
         let index = self.parse_expression(Precedence::Lowest)?;

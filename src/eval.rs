@@ -13,7 +13,7 @@ pub enum EvalError {
     InvalidLValue(Expression),
     InvalidCallValue(Expression),
     InvalidIndex(Expression),
-    IndexOutOfRange{ max: usize, actual: usize},
+    IndexOutOfRange { max: usize, actual: usize },
     CannotBeIndexed(Expression),
     WrongNumberOfArgs { expected: usize, actual: usize },
     InvalidArgument { to: String, arg: Object },
@@ -38,8 +38,9 @@ impl fmt::Display for EvalError {
             ),
             EvalError::InvalidIndex(expr) => write!(f, "{} can not serve as an index", expr),
             EvalError::CannotBeIndexed(expr) => write!(f, "{} can not be an indexed", expr),
-            EvalError::IndexOutOfRange { max, actual } => write!(f, "Index {} exceeds maximum {}", actual, max),
-
+            EvalError::IndexOutOfRange { max, actual } => {
+                write!(f, "Index {} exceeds maximum {}", actual, max)
+            }
         }
     }
 }
@@ -191,7 +192,10 @@ fn eval_prefix_expression(prefix: &Prefix, expression: &Expression, env: &Enviro
     }
 }
 
-pub fn check_arguments_len(arguments: &Vec<Object>, expected: usize) -> std::result::Result<(), EvalError> {
+pub fn check_arguments_len(
+    arguments: &Vec<Object>,
+    expected: usize,
+) -> std::result::Result<(), EvalError> {
     let actual = arguments.len();
     if actual == expected {
         Ok(())
@@ -208,7 +212,10 @@ fn eval_index(indexee: &Expression, index: &Expression, env: &Environment) -> Re
         if let Object::Array(members) = indexee_obj {
             let i = i as usize;
             if i > members.len() {
-                Err(EvalError::IndexOutOfRange { max: members.len(), actual: i})
+                Err(EvalError::IndexOutOfRange {
+                    max: members.len(),
+                    actual: i,
+                })
             } else {
                 Ok(members[i].clone())
             }
@@ -279,7 +286,7 @@ mod tests {
             ("5", "5"),
             ("true", "true"),
             ("fn (a, b) { return a + b }", "fn(a, b) { return (a + b); }"),
-            ("[1, 2, 3]", "[1, 2, 3]")
+            ("[1, 2, 3]", "[1, 2, 3]"),
         ]);
     }
 
@@ -348,7 +355,10 @@ mod tests {
 
     #[test]
     fn eval_builtins() {
-        expect_eval(vec![(r#"let a = "how long could it be???"; len(a)"#, "23")])
+        expect_eval(vec![
+            (r#"let a = "how long could it be???"; len(a)"#, "23"),
+            ("let a = [1, 2, 3]; len(a)", "3"),
+        ])
     }
 
     #[test]
