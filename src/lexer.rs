@@ -99,9 +99,9 @@ impl Lexer {
         self.read_char(); // Consume the initial `"`
         let mut out = String::new();
         while self.ch != '"' {
-           // TODO: handle unterminated strings: Look for EOF, LexerErrors.
-           out.push(self.ch);
-           self.read_char(); 
+            // TODO: handle unterminated strings: Look for EOF, LexerErrors.
+            out.push(self.ch);
+            self.read_char();
         }
         self.read_char(); // Consume the final `"`
         out

@@ -77,7 +77,7 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
         Expression::Identifier(ident) => eval_identifier(ident, env),
         Expression::Function(args, body) => {
             Ok(Object::Function(args.clone(), body.clone(), env.clone()))
-        },
+        }
         Expression::Call(name, args) => eval_call(name, args, env),
     }
 }
@@ -123,9 +123,7 @@ fn eval_infix_expression(
         (Object::Integer(left), Object::Integer(right)) => {
             eval_integer_infix_expression(infix, left, right)
         }
-        (Object::String(left), Object::String(right)) => {
-            Ok(Object::String(left + &right))
-        }
+        (Object::String(left), Object::String(right)) => Ok(Object::String(left + &right)),
         (left, right) => Err(EvalError::TypeMismatch(infix.clone(), left, right)),
     }
 }
@@ -177,7 +175,7 @@ fn eval_call(name: &Expression, input_args: &Vec<Expression>, calling_env: &Envi
         for (param_name, expr) in args.iter().zip(input_args) {
             inner_env.set(&param_name, eval_expression(expr, calling_env)?);
         }
-        eval_statements(&body.statements, &inner_env) 
+        eval_statements(&body.statements, &inner_env)
     } else {
         Err(EvalError::InvalidCallValue(name.clone()))
     }
@@ -248,12 +246,10 @@ mod tests {
             ("if (5 > 10) { 1 } else { 2 }", "2"),
         ]);
     }
-    
+
     #[test]
     fn eval_string_concat() {
-        expect_eval(vec![
-            (r#""Hello" + " " + "World!""#, r#""Hello World!""#),
-        ]);
+        expect_eval(vec![(r#""Hello" + " " + "World!""#, r#""Hello World!""#)]);
     }
 
     #[test]

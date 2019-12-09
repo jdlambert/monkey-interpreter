@@ -188,7 +188,7 @@ impl Parser {
             Token::String(s) => {
                 self.next_token()?;
                 Ok(Expression::String(s))
-            },
+            }
             Token::True => {
                 self.next_token()?;
                 Ok(Expression::Boolean(true))
@@ -441,8 +441,10 @@ mod tests {
 
     #[test]
     fn test_strings() {
-        test_parsing(vec![(r#""string!""another string!""#, 
-                           r#""string!";"another string!";"#)]);
+        test_parsing(vec![(
+            r#""string!""another string!""#,
+            r#""string!";"another string!";"#,
+        )]);
     }
 
     #[test]

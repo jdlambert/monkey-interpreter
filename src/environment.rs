@@ -22,7 +22,7 @@ impl Environment {
                 } else {
                     None
                 }
-            },
+            }
         }
     }
 
@@ -37,5 +37,4 @@ impl Environment {
             ..Default::default()
         }
     }
-
 }
