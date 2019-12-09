@@ -48,7 +48,6 @@ fn eval_statements(statements: &Vec<Statement>, env: &Environment) -> Result {
                 }
             },
             Statement::Let(left, right) => eval_let_statement(&left, &right, &env)?,
-            _ => return Err(EvalError::Unimplemented),
         }
     }
     Ok(result)
@@ -219,7 +218,12 @@ mod tests {
     }
 
     #[test]
-    fn eval_returnsls() {
+    fn eval_returns() {
         expect_eval(vec![("1 + 1; return 2; 3 + 3", "2")]);
+    }
+
+    #[test]
+    fn eval_bindings() {
+        expect_eval(vec![("x", "null"), ("let x = 1; x", "1"), ("let x = 10; let y = 42; x + y", "52")]);
     }
 }
