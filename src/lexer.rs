@@ -53,6 +53,9 @@ impl Lexer {
             '<' => Token::Lt,
             '>' => Token::Gt,
             '\0' => Token::Eof,
+            '"' => {
+                return Token::String(self.read_string());
+            }
             _ => {
                 if is_letter(self.ch) {
                     return Token::from_ident(self.read_identifier());
@@ -90,6 +93,17 @@ impl Lexer {
             self.read_char();
         }
         &self.input[position..self.position]
+    }
+
+    fn read_string(&mut self) -> String {
+        self.read_char(); // Consume the initial `"`
+        let mut out = String::new();
+        while self.ch != '"' {
+           // TODO: handle unterminated strings: Look for EOF, LexerErrors.
+           out.push(self.ch);
+           self.read_char(); 
+        }
+        out
     }
 
     fn skip_whitespace(&mut self) {
@@ -226,6 +240,15 @@ mod tests {
         let input = r#"== !="#;
 
         let expected = [Token::Equal, Token::NotEqual];
+
+        test_next_token(input, &expected);
+    }
+
+    #[test]
+    fn test_strings() {
+        let input = r#""string!""#;
+
+        let expected = [Token::String("string!".to_string())];
 
         test_next_token(input, &expected);
     }
