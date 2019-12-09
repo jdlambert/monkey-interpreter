@@ -1,4 +1,4 @@
-use crate::ast::{BlockStatement, Expression, Infix, Prefix, Program, Statement};
+use crate::ast::{BlockStatement, Expression, Infix, Prefix, Statement};
 use crate::builtins;
 use crate::object::Object;
 use crate::{environment::Environment, lexer::Lexer, parser::Parser};
@@ -355,6 +355,9 @@ mod tests {
             (r#"let a = "how long could it be???"; len(a)"#, "23"),
             ("let a = [1, 2, 3]; len(a)", "3"),
             ("let a = [1, 2, 3]; first(a)", "1"),
+            ("let a = [1, 2, 3]; rest(a)", "[2, 3]"),
+            ("let a = [1, 2, 3]; last(a)", "3"),
+            ("let a = [1, 2, 3]; push(a, 10)", "[1, 2, 3, 10]"),
         ])
     }
 
@@ -362,4 +365,5 @@ mod tests {
     fn eval_index_ops() {
         expect_eval(vec![("let a = [1, 2, 3, 4, 5]; a[0]", "1")])
     }
+
 }

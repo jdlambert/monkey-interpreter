@@ -30,7 +30,13 @@ macro_rules! builtin {
     };
 }
 
-const BUILTINS: &[BuiltInFn] = &[builtin!(len), builtin!(first)];
+const BUILTINS: &[BuiltInFn] = &[
+    builtin!(len),
+    builtin!(first),
+    builtin!(last),
+    builtin!(rest),
+    builtin!(push),
+];
 
 pub fn get(name: &str) -> Option<Object> {
     match BUILTINS.iter().find(|builtin| name == builtin.name) {
@@ -59,6 +65,59 @@ fn first(arguments: &Vec<Object>) -> eval::Result {
     eval::check_arguments_len(arguments, 1)?;
     match arguments.first() {
         Some(Object::Array(a)) => Ok(a[0].clone()),
+        _ => Err(EvalError::InvalidArgument {
+            to: "first".to_string(),
+            arg: if let Some(obj) = arguments.first() {
+                obj.clone()
+            } else {
+                Object::Null
+            },
+        }),
+    }
+}
+
+fn last(arguments: &Vec<Object>) -> eval::Result {
+    eval::check_arguments_len(arguments, 1)?;
+    match arguments.first() {
+        Some(Object::Array(a)) => Ok(a.last().unwrap().clone()),
+        _ => Err(EvalError::InvalidArgument {
+            to: "first".to_string(),
+            arg: if let Some(obj) = arguments.first() {
+                obj.clone()
+            } else {
+                Object::Null
+            },
+        }),
+    }
+}
+
+fn rest(arguments: &Vec<Object>) -> eval::Result {
+    eval::check_arguments_len(arguments, 1)?;
+    match arguments.first() {
+        Some(Object::Array(a)) => {
+            let mut rest = a.clone();
+            rest.remove(0);
+            Ok(Object::Array(rest))
+        }
+        _ => Err(EvalError::InvalidArgument {
+            to: "first".to_string(),
+            arg: if let Some(obj) = arguments.first() {
+                obj.clone()
+            } else {
+                Object::Null
+            },
+        }),
+    }
+}
+
+fn push(arguments: &Vec<Object>) -> eval::Result {
+    eval::check_arguments_len(arguments, 2)?;
+    match arguments.first() {
+        Some(Object::Array(a)) => {
+            let mut new = a.clone();
+            new.push(arguments[1].clone());
+            Ok(Object::Array(new))
+        }
         _ => Err(EvalError::InvalidArgument {
             to: "first".to_string(),
             arg: if let Some(obj) = arguments.first() {
