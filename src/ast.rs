@@ -104,6 +104,7 @@ pub enum Expression {
     Function(Vec<String>, BlockStatement),
     Call(Box<Expression>, Vec<Expression>),
     Array(Vec<Expression>),
+    Index(Box<Expression>, Box<Expression>),
 }
 
 impl fmt::Display for Expression {
@@ -142,6 +143,9 @@ impl fmt::Display for Expression {
                     .collect::<Vec<std::string::String>>()
                     .join(", ");
                 write!(f, "[{}]", members)
+            }
+            Expression::Index(indexee, index) => {
+                write!(f, "{}[{}]", indexee, index)
             }
         }
     }

@@ -41,6 +41,7 @@ pub enum Precedence {
     Product,
     Prefix,
     Call,
+    Index,
 }
 
 impl From<&Token> for Precedence {
@@ -55,6 +56,7 @@ impl From<&Token> for Precedence {
             Token::Slash => Precedence::Product,
             Token::Asterisk => Precedence::Product,
             Token::Lparen => Precedence::Call,
+            Token::Lbracket => Precedence::Index,
             _ => Precedence::Lowest,
         }
     }
@@ -103,6 +105,7 @@ fn infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
         Token::Slash => Some(Parser::parse_infix_expression),
         Token::Equal => Some(Parser::parse_infix_expression),
         Token::NotEqual => Some(Parser::parse_infix_expression),
+        Token::Lbracket => Some(Parser::parse_array_index),
         Token::Lt => Some(Parser::parse_infix_expression),
         Token::Gt => Some(Parser::parse_infix_expression),
         Token::Lparen => Some(Parser::parse_call_expression),
@@ -255,6 +258,13 @@ impl Parser {
         Ok(parameters)
     }
     
+    fn parse_array_index(&mut self, left: Expression) -> Result<Expression> {
+        self.next_token()?; // Consume the `[`
+        let index = self.parse_expression(Precedence::Lowest)?;
+        self.expect_token(Token::Rbracket, ParserError::ExpectedRbracket)?;
+        Ok(Expression::Index(Box::new(left), Box::new(index)))
+    }
+
     fn parse_array(&mut self) -> Result<Expression> {
         self.next_token()?; // Consume the `[`
 
@@ -522,5 +532,10 @@ mod tests {
     #[test]
     fn test_calls() {
         test_parsing(vec![("add(x, y, z)", "add(x, y, z);")]);
+    }
+
+    #[test]
+    fn test_index_ops() {
+        test_parsing(vec![("a[1]", "a[1];")]);
     }
 }

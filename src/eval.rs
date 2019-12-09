@@ -12,6 +12,9 @@ pub enum EvalError {
     TypeMismatch(Infix, Object, Object),
     InvalidLValue(Expression),
     InvalidCallValue(Expression),
+    InvalidIndex(Expression),
+    IndexOutOfRange{ max: usize, actual: usize},
+    CannotBeIndexed(Expression),
     WrongNumberOfArgs { expected: usize, actual: usize },
     InvalidArgument { to: String, arg: Object },
 }
@@ -33,6 +36,10 @@ impl fmt::Display for EvalError {
                 "Invalid number of args: saw {}, expected {}",
                 actual, expected
             ),
+            EvalError::InvalidIndex(expr) => write!(f, "{} can not serve as an index", expr),
+            EvalError::CannotBeIndexed(expr) => write!(f, "{} can not be an indexed", expr),
+            EvalError::IndexOutOfRange { max, actual } => write!(f, "Index {} exceeds maximum {}", actual, max),
+
         }
     }
 }
@@ -92,6 +99,7 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
         }
         Expression::Call(name, args) => eval_call(name, args, env),
         Expression::Array(members) => eval_array(members, env),
+        Expression::Index(indexee, index) => eval_index(indexee, index, env),
     }
 }
 
@@ -189,6 +197,26 @@ pub fn check_arguments_len(arguments: &Vec<Object>, expected: usize) -> std::res
         Ok(())
     } else {
         Err(EvalError::WrongNumberOfArgs { actual, expected })
+    }
+}
+
+fn eval_index(indexee: &Expression, index: &Expression, env: &Environment) -> Result {
+    let indexee_obj = eval_expression(indexee, env)?;
+    let index_obj = eval_expression(index, env)?;
+
+    if let Object::Integer(i) = index_obj {
+        if let Object::Array(members) = indexee_obj {
+            let i = i as usize;
+            if i > members.len() {
+                Err(EvalError::IndexOutOfRange { max: members.len(), actual: i})
+            } else {
+                Ok(members[i].clone())
+            }
+        } else {
+            Err(EvalError::CannotBeIndexed(indexee.clone()))
+        }
+    } else {
+        Err(EvalError::InvalidIndex(index.clone()))
     }
 }
 
@@ -321,5 +349,10 @@ mod tests {
     #[test]
     fn eval_builtins() {
         expect_eval(vec![(r#"let a = "how long could it be???"; len(a)"#, "23")])
+    }
+
+    #[test]
+    fn eval_index_ops() {
+        expect_eval(vec![("let a = [1, 2, 3, 4, 5]; a[0]", "1")])
     }
 }
