@@ -334,11 +334,11 @@ impl Parser {
     fn parse_let_statement(&mut self) -> Result<Statement> {
         self.next_token()?; // Consume the `let`
 
-        let identifier = self.parse_identifier()?;
+        let expr = self.parse_expression(Precedence::Lowest)?;
         self.expect_token(Token::Assign, ParserError::ExpectedAssign)?;
         let value = self.parse_expression(Precedence::Lowest)?;
 
-        Ok(Statement::Let(identifier, value))
+        Ok(Statement::Let(expr, value))
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement> {
@@ -393,8 +393,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
 
-    use super::{Parser, ParserError};
-    use crate::token::Token;
+    use super::{Parser};
 
     fn test_parsing(tests: Vec<(&str, &str)>) {
         for (input, expected) in tests {
@@ -413,22 +412,6 @@ mod tests {
             ("let y = 10;", "let y = 10;"),
             ("let foobar = 83838383", "let foobar = 83838383;"),
         ]);
-    }
-
-    #[test]
-    fn test_bad_let_statements() {
-        let input = r#"let x 5; let = 10; let 10100101;"#;
-
-        let mut parser = Parser::from_input(input.to_string());
-        assert_eq!(parser.parse_program(), None);
-        assert_eq!(
-            parser.errors,
-            vec![
-                ParserError::ExpectedAssign(Token::Int(5)),
-                ParserError::ExpectedIdentifier(Token::Assign),
-                ParserError::ExpectedIdentifier(Token::Int(10100101)),
-            ]
-        );
     }
 
     #[test]
