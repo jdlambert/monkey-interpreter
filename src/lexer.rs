@@ -32,6 +32,7 @@ impl Lexer {
                     Token::Assign
                 }
             }
+            ':' => Token::Colon,
             ';' => Token::Semicolon,
             '(' => Token::Lparen,
             ')' => Token::Rparen,

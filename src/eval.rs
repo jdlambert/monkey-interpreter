@@ -96,7 +96,15 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
         Expression::Call(name, args) => eval_call(name, args, env),
         Expression::Array(members) => eval_array(members, env),
         Expression::Index(indexee, index) => eval_index(indexee, index, env),
+        Expression::Hash(pairs) => eval_hash(pairs, env)
     }
+}
+
+fn eval_hash(pairs: &Vec<Expression>, env: &Environment) -> Result {
+
+    
+
+    Ok(Object::Null)
 }
 
 fn eval_identifier(ident: &str, env: &Environment) -> Result {
@@ -365,5 +373,4 @@ mod tests {
     fn eval_index_ops() {
         expect_eval(vec![("let a = [1, 2, 3, 4, 5]; a[0]", "1")])
     }
-
 }

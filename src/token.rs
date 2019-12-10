@@ -8,6 +8,7 @@ pub enum Token {
     Assign,
     Plus,
     Comma,
+    Colon,
     Semicolon,
     Lparen,
     Rparen,

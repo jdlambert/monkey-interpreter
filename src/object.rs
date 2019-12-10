@@ -1,7 +1,7 @@
 use crate::{ast::BlockStatement, builtins::BuiltInFn, environment::Environment};
-use std::fmt;
+use std::{fmt, collections::HashMap};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Object {
     Null,
     Integer(i64),
@@ -10,6 +10,7 @@ pub enum Object {
     Function(Vec<std::string::String>, BlockStatement, Environment),
     BuiltIn(&'static BuiltInFn),
     Array(Vec<Object>),
+    Hash(HashMap<Object, Object>)
 }
 
 use Object::*;

@@ -86,6 +86,7 @@ fn prefix_parse_fn(token: &Token) -> Option<PrefixParseFn> {
         Token::Int(_) => Some(Parser::parse_literal),
         Token::String(_) => Some(Parser::parse_literal),
         Token::Lbracket => Some(Parser::parse_array),
+        Token::Lbrace => Some(Parser::parse_hash),
         Token::True => Some(Parser::parse_literal),
         Token::False => Some(Parser::parse_literal),
         Token::Bang => Some(Parser::parse_prefix_bang),
@@ -105,10 +106,11 @@ fn infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
         Token::Slash => Some(Parser::parse_infix_expression),
         Token::Equal => Some(Parser::parse_infix_expression),
         Token::NotEqual => Some(Parser::parse_infix_expression),
-        Token::Lbracket => Some(Parser::parse_array_index),
+        Token::Lbracket => Some(Parser::parse_index),
         Token::Lt => Some(Parser::parse_infix_expression),
         Token::Gt => Some(Parser::parse_infix_expression),
         Token::Lparen => Some(Parser::parse_call_expression),
+        Token::Colon => Some(Parser::parse_infix_expression),
         _ => None,
     }
 }
@@ -258,7 +260,7 @@ impl Parser {
         Ok(parameters)
     }
 
-    fn parse_array_index(&mut self, left: Expression) -> Result<Expression> {
+    fn parse_index(&mut self, left: Expression) -> Result<Expression> {
         self.next_token()?; // Consume the `[`
         let index = self.parse_expression(Precedence::Lowest)?;
         self.expect_token(Token::Rbracket, ParserError::ExpectedRbracket)?;
@@ -268,9 +270,26 @@ impl Parser {
     fn parse_array(&mut self) -> Result<Expression> {
         self.next_token()?; // Consume the `[`
 
-        let members = self.parse_expressions(Token::Rbracket, ParserError::ExpectedRbracket)?;
+        Ok(Expression::Array(self.parse_expressions(
+            Token::Rbracket,
+            ParserError::ExpectedRbracket,
+        )?))
+    }
 
-        Ok(Expression::Array(members))
+    fn parse_key_value(&mut self, left: Expression) -> Result<Expression> {
+        Ok(Expression::KeyValue(
+            Box::new(left),
+            Box::new(self.parse_expression(Precedence::Lowest)?),
+        ))
+    }
+
+    fn parse_hash(&mut self) -> Result<Expression> {
+        self.next_token()?; // Consume the `{`
+
+        Ok(Expression::Hash(self.parse_expressions(
+            Token::Rbrace,
+            ParserError::ExpectedRbrace,
+        )?))
     }
 
     fn parse_function_literal(&mut self) -> Result<Expression> {

@@ -105,6 +105,8 @@ pub enum Expression {
     Call(Box<Expression>, Vec<Expression>),
     Array(Vec<Expression>),
     Index(Box<Expression>, Box<Expression>),
+    Hash(Vec<Expression>),
+    KeyValue(Box<Expression>, Box<Expression>),
 }
 
 impl fmt::Display for Expression {
@@ -145,6 +147,15 @@ impl fmt::Display for Expression {
                 write!(f, "[{}]", members)
             }
             Expression::Index(indexee, index) => write!(f, "{}[{}]", indexee, index),
+            Expression::KeyValue(key, value) => write!(f, "{}: {}", key, value),
+            Expression::Hash(pairs) => {
+                let pairs = pairs
+                    .iter()
+                    .map(|a| a.to_string())
+                    .collect::<Vec<std::string::String>>()
+                    .join(", ");
+                write!(f, "{{{}}}", pairs)
+            }
         }
     }
 }
