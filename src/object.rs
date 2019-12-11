@@ -11,7 +11,6 @@ pub enum Object {
     BuiltIn(&'static BuiltInFn),
     Array(Vec<Object>),
     Hash(HashMap<HashKey, Box<Object>>),
-    KeyValue(HashKey, Box<Object>),
 }
 
 impl fmt::Display for Object {
@@ -39,9 +38,6 @@ impl fmt::Display for Object {
                     .join(", ");
                 write!(f, "[{}]", pairs)
             },
-            Object::KeyValue(key, val) => {
-                write!(f, "{}: {}", key, val)
-            }
         }
     }
 }

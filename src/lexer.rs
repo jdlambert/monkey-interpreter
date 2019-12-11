@@ -23,6 +23,7 @@ impl Lexer {
     pub fn next_token(self: &mut Self) -> Token {
         self.skip_whitespace();
 
+        println!("{}", self.ch);
         let tok = match self.ch {
             '=' => {
                 if '=' == self.peek_char() {

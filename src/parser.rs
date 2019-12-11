@@ -30,6 +30,7 @@ pub enum ParserError {
     ExpectedRbrace(Token),
     ExpectedRbracket(Token),
     ExpectedComma(Token),
+    ExpectedColon(Token),
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -110,7 +111,6 @@ fn infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
         Token::Lt => Some(Parser::parse_infix_expression),
         Token::Gt => Some(Parser::parse_infix_expression),
         Token::Lparen => Some(Parser::parse_call_expression),
-        Token::Colon => Some(Parser::parse_key_value),
         _ => None,
     }
 }
@@ -276,20 +276,26 @@ impl Parser {
         )?))
     }
 
-    fn parse_key_value(&mut self, left: Expression) -> Result<Expression> {
-        Ok(Expression::KeyValue(
-            Box::new(left),
-            Box::new(self.parse_expression(Precedence::Lowest)?),
-        ))
-    }
-
     fn parse_hash(&mut self) -> Result<Expression> {
         self.next_token()?; // Consume the `{`
+        let mut kvs = vec![];
 
-        Ok(Expression::Hash(self.parse_expressions(
-            Token::Rbrace,
-            ParserError::ExpectedRbrace,
-        )?))
+        if self.cur_token != Token::Rbrace {
+            let key = self.parse_expression(Precedence::Lowest)?;
+            self.expect_token(Token::Colon, ParserError::ExpectedColon)?;
+            let value = self.parse_expression(Precedence::Lowest)?;
+            kvs.push((key, value));
+            while self.cur_token == Token::Comma {
+                self.next_token()?; // Consume the `,`
+                let key = self.parse_expression(Precedence::Lowest)?;
+                self.expect_token(Token::Colon, ParserError::ExpectedColon)?;
+                let value = self.parse_expression(Precedence::Lowest)?;
+                kvs.push((key, value));
+            }
+        }
+        self.expect_token(Token::Rbrace, ParserError::ExpectedRbrace)?;
+
+        Ok(Expression::Hash(kvs))
     }
 
     fn parse_function_literal(&mut self) -> Result<Expression> {
@@ -310,7 +316,7 @@ impl Parser {
 
         if self.cur_token != end_token {
             expressions.push(self.parse_expression(Precedence::Lowest)?);
-
+            println!("{:?}", expressions);
             while self.cur_token == Token::Comma {
                 self.next_token()?; // Consume the `,`
                 expressions.push(self.parse_expression(Precedence::Lowest)?);
@@ -556,5 +562,10 @@ mod tests {
     #[test]
     fn test_index_ops() {
         test_parsing(vec![("a[1]", "a[1];")]);
+    }
+
+    #[test]
+    fn test_hashes() {
+        test_parsing(vec![("{10: 12}", "{10: 12};")]);
     }
 }

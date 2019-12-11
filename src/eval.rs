@@ -18,7 +18,6 @@ pub enum EvalError {
     WrongNumberOfArgs { expected: usize, actual: usize },
     InvalidArgument { to: String, arg: Object },
     CannotBeHashed(Object),
-    InvalidPair(Object),
 }
 
 impl fmt::Display for EvalError {
@@ -44,7 +43,6 @@ impl fmt::Display for EvalError {
                 write!(f, "Index {} exceeds maximum {}", actual, max)
             },
             EvalError::CannotBeHashed(obj) => write!(f, "{} can not be hashed", obj),
-            EvalError::InvalidPair(obj) => write!(f, "Expected pair, saw {}", obj),
         }
     }
 }
@@ -101,26 +99,16 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
         Expression::Array(members) => eval_array(members, env),
         Expression::Index(indexee, index) => eval_index(indexee, index, env),
         Expression::Hash(pairs) => eval_hash(pairs, env),
-        Expression::KeyValue(key, value) => eval_kv(key, value, env),
     }
 }
 
-fn eval_kv(key: &Expression, val: &Expression, env: &Environment) -> Result {
-    let key = HashKey::from_object(eval_expression(key, env)?)?;
-    let val = eval_expression(val, env)?;
-    Ok(Object::KeyValue(key, Box::new(val)))
-}
-
-fn eval_hash(pairs: &Vec<Expression>, env: &Environment) -> Result {
+fn eval_hash(pairs: &Vec<(Expression, Expression)>, env: &Environment) -> Result {
     let mut map = HashMap::new();
 
-    for pair in pairs {
-        let obj = eval_expression(pair, env)?;
-        if let Object::KeyValue(key, val) = obj {
-            map.insert(key, val.clone());
-        } else {
-            return Err(EvalError::InvalidPair(obj.clone()))
-        }
+    for (key, val) in pairs {
+        let key = HashKey::from_object(eval_expression(key, env)?)?;
+        let val = eval_expression(val, env)?;
+        map.insert(key, Box::new(val.clone()));
     }
 
     Ok(Object::Hash(map))
