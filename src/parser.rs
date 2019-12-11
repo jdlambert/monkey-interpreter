@@ -110,7 +110,7 @@ fn infix_parse_fn(token: &Token) -> Option<InfixParseFn> {
         Token::Lt => Some(Parser::parse_infix_expression),
         Token::Gt => Some(Parser::parse_infix_expression),
         Token::Lparen => Some(Parser::parse_call_expression),
-        Token::Colon => Some(Parser::parse_infix_expression),
+        Token::Colon => Some(Parser::parse_key_value),
         _ => None,
     }
 }

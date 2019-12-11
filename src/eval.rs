@@ -1,8 +1,8 @@
 use crate::ast::{BlockStatement, Expression, Infix, Prefix, Statement};
 use crate::builtins;
-use crate::object::Object;
+use crate::object::{Object, HashKey};
 use crate::{environment::Environment, lexer::Lexer, parser::Parser};
-use std::fmt;
+use std::{fmt, collections::HashMap};
 
 pub type Result = std::result::Result<Object, EvalError>;
 
@@ -17,6 +17,8 @@ pub enum EvalError {
     CannotBeIndexed(Expression),
     WrongNumberOfArgs { expected: usize, actual: usize },
     InvalidArgument { to: String, arg: Object },
+    CannotBeHashed(Object),
+    InvalidPair(Object),
 }
 
 impl fmt::Display for EvalError {
@@ -40,7 +42,9 @@ impl fmt::Display for EvalError {
             EvalError::CannotBeIndexed(expr) => write!(f, "{} can not be an indexed", expr),
             EvalError::IndexOutOfRange { max, actual } => {
                 write!(f, "Index {} exceeds maximum {}", actual, max)
-            }
+            },
+            EvalError::CannotBeHashed(obj) => write!(f, "{} can not be hashed", obj),
+            EvalError::InvalidPair(obj) => write!(f, "Expected pair, saw {}", obj),
         }
     }
 }
@@ -96,15 +100,30 @@ fn eval_expression(expression: &Expression, env: &Environment) -> Result {
         Expression::Call(name, args) => eval_call(name, args, env),
         Expression::Array(members) => eval_array(members, env),
         Expression::Index(indexee, index) => eval_index(indexee, index, env),
-        Expression::Hash(pairs) => eval_hash(pairs, env)
+        Expression::Hash(pairs) => eval_hash(pairs, env),
+        Expression::KeyValue(key, value) => eval_kv(key, value, env),
     }
 }
 
+fn eval_kv(key: &Expression, val: &Expression, env: &Environment) -> Result {
+    let key = HashKey::from_object(eval_expression(key, env)?)?;
+    let val = eval_expression(val, env)?;
+    Ok(Object::KeyValue(key, Box::new(val)))
+}
+
 fn eval_hash(pairs: &Vec<Expression>, env: &Environment) -> Result {
+    let mut map = HashMap::new();
 
-    
+    for pair in pairs {
+        let obj = eval_expression(pair, env)?;
+        if let Object::KeyValue(key, val) = obj {
+            map.insert(key, val.clone());
+        } else {
+            return Err(EvalError::InvalidPair(obj.clone()))
+        }
+    }
 
-    Ok(Object::Null)
+    Ok(Object::Hash(map))
 }
 
 fn eval_identifier(ident: &str, env: &Environment) -> Result {
