@@ -1,5 +1,5 @@
 use crate::{ast::BlockStatement, builtins::BuiltInFn, environment::Environment, eval};
-use std::{fmt, collections::HashMap};
+use std::{collections::HashMap, fmt};
 
 #[derive(Clone, Debug)]
 pub enum Object {
@@ -29,7 +29,7 @@ impl fmt::Display for Object {
                     .collect::<Vec<std::string::String>>()
                     .join(", ");
                 write!(f, "[{}]", members)
-            },
+            }
             Object::Hash(pairs) => {
                 let pairs = pairs
                     .iter()
@@ -37,7 +37,7 @@ impl fmt::Display for Object {
                     .collect::<Vec<std::string::String>>()
                     .join(", ");
                 write!(f, "[{}]", pairs)
-            },
+            }
         }
     }
 }

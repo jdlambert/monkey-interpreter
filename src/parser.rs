@@ -316,7 +316,6 @@ impl Parser {
 
         if self.cur_token != end_token {
             expressions.push(self.parse_expression(Precedence::Lowest)?);
-            println!("{:?}", expressions);
             while self.cur_token == Token::Comma {
                 self.next_token()?; // Consume the `,`
                 expressions.push(self.parse_expression(Precedence::Lowest)?);

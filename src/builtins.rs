@@ -36,6 +36,7 @@ const BUILTINS: &[BuiltInFn] = &[
     builtin!(last),
     builtin!(rest),
     builtin!(push),
+    builtin!(puts),
 ];
 
 pub fn get(name: &str) -> Option<Object> {
@@ -127,4 +128,10 @@ fn push(arguments: &Vec<Object>) -> eval::Result {
             },
         }),
     }
+}
+
+fn puts(arguments: &Vec<Object>) -> eval::Result {
+    eval::check_arguments_len(arguments, 1)?;
+    println!("{}", arguments.first().unwrap());
+    Ok(Object::Null)
 }

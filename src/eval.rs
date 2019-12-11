@@ -1,8 +1,8 @@
 use crate::ast::{BlockStatement, Expression, Infix, Prefix, Statement};
 use crate::builtins;
-use crate::object::{Object, HashKey};
+use crate::object::{HashKey, Object};
 use crate::{environment::Environment, lexer::Lexer, parser::Parser};
-use std::{fmt, collections::HashMap};
+use std::{collections::HashMap, fmt};
 
 pub type Result = std::result::Result<Object, EvalError>;
 
@@ -41,7 +41,7 @@ impl fmt::Display for EvalError {
             EvalError::CannotBeIndexed(expr) => write!(f, "{} can not be an indexed", expr),
             EvalError::IndexOutOfRange { max, actual } => {
                 write!(f, "Index {} exceeds maximum {}", actual, max)
-            },
+            }
             EvalError::CannotBeHashed(obj) => write!(f, "{} can not be hashed", obj),
         }
     }
@@ -218,22 +218,30 @@ fn eval_index(indexee: &Expression, index: &Expression, env: &Environment) -> Re
     let indexee_obj = eval_expression(indexee, env)?;
     let index_obj = eval_expression(index, env)?;
 
-    if let Object::Integer(i) = index_obj {
-        if let Object::Array(members) = indexee_obj {
-            let i = i as usize;
-            if i > members.len() {
-                Err(EvalError::IndexOutOfRange {
-                    max: members.len(),
-                    actual: i,
-                })
+    match indexee_obj {
+        Object::Array(members) => {
+            if let Object::Integer(i) = index_obj {
+                let i = i as usize;
+                if i > members.len() {
+                    Err(EvalError::IndexOutOfRange {
+                        max: members.len(),
+                        actual: i,
+                    })
+                } else {
+                    Ok(members[i].clone())
+                }
             } else {
-                Ok(members[i].clone())
+                Err(EvalError::InvalidIndex(index.clone()))
             }
-        } else {
-            Err(EvalError::CannotBeIndexed(indexee.clone()))
+        },
+        Object::Hash(map) => {
+            let key = HashKey::from_object(index_obj)?;
+            match map.get(&key) {
+                Some(obj) => Ok(*obj.clone()),
+                None => Ok(Object::Null),
+            }
         }
-    } else {
-        Err(EvalError::InvalidIndex(index.clone()))
+        _ => Err(EvalError::CannotBeIndexed(indexee.clone())),
     }
 }
 
@@ -378,6 +386,9 @@ mod tests {
 
     #[test]
     fn eval_index_ops() {
-        expect_eval(vec![("let a = [1, 2, 3, 4, 5]; a[0]", "1")])
+        expect_eval(vec![
+            ("let a = [1, 2, 3, 4, 5]; a[0]", "1"),
+            ("let a = {1: 2, 3: 4}; a[1]", "2"),
+        ])
     }
 }
