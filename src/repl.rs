@@ -28,7 +28,7 @@ pub fn start() {
 }
 
 fn get_input() -> String {
-    print!(">>");
+    print!(">> ");
 
     stdout().flush().expect("Failed to flush stdout!");
     let mut input = String::new();

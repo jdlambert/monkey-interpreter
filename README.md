@@ -1,1 +1,22 @@
-An interpreter for the Monkey programming language, from the book [Writing an Interpeter in Go](https://interpreterbook.com/).
+An interpreter for the [Monkey programming language](https://monkeylang.org/), from the book [Writing an Interpeter in Go](https://interpreterbook.com/).
+
+## Usage
+
+`cargo run` to start the REPL. Try something like defining `map`:
+
+```
+>> let map = fn(arr, f) {
+     let iter = fn(arr, accumulated) {
+       if (len(arr) == 0) {
+         accumulated
+       } else {
+         iter(rest(arr), push(accumulated, f(first(arr))));
+       }
+     };
+     iter(arr, []);
+   };
+>> let a = [1, 2, 3, 4];
+>> let double = fn(x) { x * 2 };
+>> map(a, double)
+[2, 4, 6, 8]
+```
